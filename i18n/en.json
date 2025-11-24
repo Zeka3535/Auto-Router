@@ -1,0 +1,46 @@
+{
+  "app.title": "Router access",
+  "selected.title": "Selected router",
+  "selected.placeholder": "Pick a router below to see logins and passwords.",
+  "selected.ip": "Address:",
+  "selected.open": "Open settings",
+
+  "section.defaults": "Default logins/passwords",
+  "defaults.hint": "Pick a router from the list to copy logins and passwords fast.",
+  "defaults.empty": "No routers added yet.",
+  "defaults.none": "No login/password info available.",
+  "brand.huawei": "OLT Huawei",
+  "brand.zte": "OLT ZTE",
+  "brand.row_hint": "Swipe horizontally to see more models.",
+  "brand.nav_prev": "Prev",
+  "brand.nav_next": "Next",
+  "label.brand": "Brand",
+  "label.model": "Model",
+  "label.group": "Group",
+  "label.defaults": "Login/password pairs",
+  "label.custom_group": "Custom group name",
+  "placeholder.custom_group": "For example, Keenetic",
+
+  "section.mine": "My data",
+  "label.ip": "IP address (optional)",
+  "label.login": "Login",
+  "label.password": "Password",
+  "label.note": "Note",
+  "group.auto": "Detect automatically",
+  "group.custom": "Custom group",
+  "action.save": "Save",
+  "action.clear": "Clear",
+  "action.copy_combo": "Copy",
+  "action.delete": "Delete",
+  "action.add_cred": "Add pair",
+  "mine.empty": "Add your router to keep it handy here.",
+  "mine.validation_required": "Enter brand and model.",
+  "mine.validation_creds": "Add at least one login/password pair.",
+  "mine.validation_group": "Enter the new group name.",
+
+  "lang.switch": "Language",
+  "theme.light": "Light",
+  "theme.dark": "Dark"
+}
+
+

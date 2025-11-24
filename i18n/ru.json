@@ -1,0 +1,46 @@
+{
+  "app.title": "Учётки роутеров",
+  "selected.title": "Выбранный модем",
+  "selected.placeholder": "Выберите модем ниже, чтобы увидеть логины и пароли.",
+  "selected.ip": "Адрес:",
+  "selected.open": "Открыть настройки",
+
+  "section.defaults": "Подсказки логина/пароля",
+  "defaults.hint": "Выберите модем из списка, чтобы быстро скопировать логины и пароли.",
+  "defaults.empty": "Пока нет сохранённых моделей.",
+  "defaults.none": "Нет данных о логинах и паролях.",
+  "brand.huawei": "OLT Huawei",
+  "brand.zte": "OLT ZTE",
+  "brand.row_hint": "Листайте горизонтально, чтобы увидеть больше моделей.",
+  "brand.nav_prev": "Назад",
+  "brand.nav_next": "Вперёд",
+  "label.brand": "Бренд",
+  "label.model": "Модель",
+  "label.group": "Группа",
+  "label.defaults": "Пары логин/пароль",
+  "label.custom_group": "Название группы",
+  "placeholder.custom_group": "Например, Keenetic",
+
+  "section.mine": "Мои данные",
+  "label.ip": "IP адрес (необязательно)",
+  "label.login": "Логин",
+  "label.password": "Пароль",
+  "label.note": "Заметка",
+  "group.auto": "Определить автоматически",
+  "group.custom": "Своя группа",
+  "action.save": "Сохранить",
+  "action.clear": "Очистить",
+  "action.copy_combo": "Скопировать",
+  "action.delete": "Удалить",
+  "action.add_cred": "Добавить пару",
+  "mine.empty": "Добавьте свой модем/роутер, чтобы быстро переходить к нему.",
+  "mine.validation_required": "Укажите бренд и модель.",
+  "mine.validation_creds": "Добавьте хотя бы одну пару логин/пароль.",
+  "mine.validation_group": "Введите название новой группы.",
+
+  "lang.switch": "Язык",
+  "theme.light": "Светлая",
+  "theme.dark": "Тёмная"
+}
+
+

@@ -1,0 +1,65 @@
+{
+  "id": "router-access",
+  "name": "Учётки роутеров",
+  "short_name": "Роутеры",
+  "description": "Веб-приложение для быстрого доступа к админке роутеров. Хранит логины и пароли для различных моделей роутеров и модемов.",
+  "lang": "ru",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "browser"],
+  "orientation": "portrait",
+  "background_color": "#05070c",
+  "theme_color": "#1a6dff",
+  "categories": ["utilities", "productivity"],
+  "icons": [
+    {
+      "src": "favicon-16x16.png",
+      "sizes": "16x16",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "favicon-32x32.png",
+      "sizes": "32x32",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    { "src": "ogimage.png", "type": "image/png", "sizes": "1200x630", "form_factor": "wide" },
+    { "src": "ogimage-mobile.png", "type": "image/png", "sizes": "512x512", "form_factor": "narrow" }
+  ],
+  "prefer_related_applications": false
+}

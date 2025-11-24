@@ -1,0 +1,835 @@
+// Основная логика приложения. Комментарии — на русском.
+
+(() => {
+    const THEME_STORAGE_KEY = 'theme:v1';
+    const MINE_STORAGE_KEY = 'userCreds:v1';
+    const CUSTOM_ORDER_BASE = 10;
+    const CUSTOM_THUMBNAIL = './assets/svg/router.svg';
+
+    // Тема: автодетект + ручной переключатель
+    function detectTheme() {
+        try {
+            const saved = localStorage.getItem(THEME_STORAGE_KEY);
+            if (saved === 'light' || saved === 'dark') return saved;
+        } catch {}
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        return prefersDark ? 'dark' : 'light';
+    }
+
+    function applyTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        try { localStorage.setItem(THEME_STORAGE_KEY, theme); } catch {}
+    }
+
+    function initTheme() {
+        applyTheme(detectTheme());
+        const btn = document.getElementById('theme-toggle');
+        if (btn) {
+            btn.addEventListener('click', () => {
+                const next = (document.documentElement.getAttribute('data-theme') === 'dark') ? 'light' : 'dark';
+                applyTheme(next);
+            });
+        }
+    }
+
+    // Копирование в буфер
+    async function copy(text) {
+        // Сначала пробуем современный API (требует HTTPS/gesture)
+        try {
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(text);
+                return true;
+            }
+        } catch {}
+        // Фолбэк для мобильных браузеров (iOS Safari и др.)
+        try {
+            const ta = document.createElement('textarea');
+            ta.value = text || '';
+            ta.setAttribute('readonly', '');
+            ta.style.position = 'fixed';
+            ta.style.top = '-1000px';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.focus();
+            ta.select();
+            const ok = document.execCommand('copy');
+            document.body.removeChild(ta);
+            return ok;
+        } catch {
+            return false;
+        }
+    }
+
+    const BRAND_IP = {
+        huawei: 'http://192.168.100.1',
+        zte: 'http://192.168.1.1'
+    };
+    const BRAND_GROUPS = [
+        { id: 'huawei', titleKey: 'brand.huawei', fallback: 'Huawei' },
+        { id: 'zte', titleKey: 'brand.zte', fallback: 'ZTE' }
+    ];
+
+    const DEFAULT_ORDER = 999;
+    const CARD_REGISTRY = new Map();
+    let cardIdCounter = 0;
+    let activeCardId = null;
+    let routerDbSnapshot = { defaultsCommon: [], models: [] };
+    let credFieldIdCounter = 0;
+    const CUSTOM_GROUP_PREFIX = 'custom:';
+
+    async function copyCombo(pair) {
+        if (!pair) return;
+        await copy(pair.password || '');
+        setTimeout(() => { copy(pair.login || ''); }, 250);
+    }
+
+    function createCopyIconButton(onClick) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'icon-btn cred-copy-btn';
+        btn.setAttribute('data-i18n-title', 'action.copy_combo');
+        btn.setAttribute('title', getText('action.copy_combo', 'Скопировать'));
+        btn.innerHTML = `
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M8 3h9a3 3 0 0 1 3 3v10h-2V6a1 1 0 0 0-1-1H8V3zm-2 4h9a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V10a3 3 0 0 1 3-3zm0 2a1 1 0 0 0-1 1v8c0 .55.45 1 1 1h9a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1H6z"/>
+            </svg>
+            <span class="visually-hidden" data-i18n="action.copy_combo">Скопировать</span>
+        `;
+        btn.addEventListener('click', (event) => {
+            event.stopPropagation();
+            onClick?.(event);
+        });
+        return btn;
+    }
+
+    function getText(key, fallback = '') {
+        try {
+            const dict = window.__I18N__?.getDict?.();
+            if (dict && typeof dict[key] === 'string') return dict[key];
+        } catch {}
+        return fallback;
+    }
+
+    function slugifyGroup(value) {
+        if (!value) return '';
+        return value
+            .toLowerCase()
+            .trim()
+            .replace(/\s+/g, '-')
+            .replace(/-+/g, '-');
+    }
+
+    function buildGroupDefinitions(models) {
+        const defs = [];
+        const seen = new Set();
+        BRAND_GROUPS.forEach(group => {
+            defs.push({ ...group });
+            seen.add(group.id);
+        });
+        models.forEach(model => {
+            const groupId = resolveGroup(model);
+            if (!groupId || seen.has(groupId)) return;
+            const title = (model.groupLabel || '').trim() || model.brand || groupId;
+            defs.push({ id: groupId, title });
+            seen.add(groupId);
+        });
+        return defs;
+    }
+
+    // Работа с базой моделей
+    async function loadRouterDb() {
+        try {
+            const res = await fetch('./data/router-db.json');
+            if (!res.ok) throw new Error('router-db-failed');
+            return await res.json();
+        } catch {
+            return { defaultsCommon: [], models: [] };
+        }
+    }
+
+    function getMergedDb() {
+        return {
+            defaultsCommon: Array.isArray(routerDbSnapshot.defaultsCommon) ? routerDbSnapshot.defaultsCommon : [],
+            models: [
+                ...(Array.isArray(routerDbSnapshot.models) ? routerDbSnapshot.models : []),
+                ...readMine()
+            ]
+        };
+    }
+
+    function refreshRouterCards() {
+        renderBrandGroups(getMergedDb());
+    }
+
+    function renderBrandGroups(db) {
+        const container = document.getElementById('router-groups');
+        if (!container) return;
+        const models = Array.isArray(db.models) ? db.models : [];
+        const fallback = Array.isArray(db.defaultsCommon) ? db.defaultsCommon : [];
+        container.innerHTML = '';
+        CARD_REGISTRY.clear();
+        activeCardId = null;
+
+        const groupDefs = buildGroupDefinitions(models);
+        groupDefs.forEach(group => {
+            const items = models.filter(model => matchesGroup(model, group.id));
+            if (!items.length) return;
+            container.append(createBrandRow(group, items, fallback));
+        });
+
+        if (!container.children.length) {
+            const empty = document.createElement('p');
+            empty.className = 'muted';
+            empty.setAttribute('data-i18n', 'defaults.empty');
+            empty.textContent = 'Пока нет сохранённых моделей.';
+            container.append(empty);
+        }
+        window.__I18N__?.apply?.();
+        autoSelectFirst();
+    }
+
+    function matchesGroup(model, groupId) {
+        if (Array.isArray(model.group)) return model.group.includes(groupId);
+        if (typeof model.group === 'string') return model.group === groupId;
+        return resolveGroup(model) === groupId;
+    }
+
+    function resolveGroup(model) {
+        if (Array.isArray(model.group)) {
+            const match = model.group.find(item => typeof item === 'string' && item.trim());
+            if (match) return match.trim();
+        }
+        if (typeof model.group === 'string' && model.group.trim()) return model.group.trim();
+        const brand = (model.brand || '').toLowerCase();
+        if (brand.includes('huawei')) return 'huawei';
+        if (brand.includes('zte') || brand.includes('ts')) return 'zte';
+        return 'zte';
+    }
+
+    function isHuawei(model) {
+        return (model.brand || '').toLowerCase().includes('huawei');
+    }
+
+    function getOrder(model) {
+        return typeof model.order === 'number' ? model.order : DEFAULT_ORDER;
+    }
+
+    function sortModels(a, b) {
+        const orderDiff = getOrder(a) - getOrder(b);
+        if (orderDiff !== 0) return orderDiff;
+        return (a.model || '').localeCompare(b.model || '');
+    }
+
+    function createBrandRow(group, items, fallback) {
+        const section = document.createElement('section');
+        section.className = 'brand-row';
+
+        const header = document.createElement('div');
+        header.className = 'brand-row-header';
+
+        const title = document.createElement('div');
+        title.className = 'brand-row-title';
+        if (group.titleKey) {
+            title.setAttribute('data-i18n', group.titleKey);
+            title.textContent = getText(group.titleKey, group.fallback || group.id.toUpperCase());
+        } else {
+            title.textContent = group.title || group.fallback || group.id;
+        }
+        header.append(title);
+
+        const track = document.createElement('div');
+        track.className = 'brand-row-track';
+        track.setAttribute('data-group', group.id);
+
+        const sortedItems = [...items].sort(sortModels);
+        sortedItems.forEach(model => {
+            track.append(createRouterCard(model, fallback));
+        });
+
+        section.append(header, track);
+        return section;
+    }
+
+    function createRouterCard(model, fallback) {
+        const card = document.createElement('article');
+        card.className = 'router-card';
+        const header = document.createElement('div');
+        header.className = 'router-header';
+
+        const imgWrap = document.createElement('div');
+        imgWrap.className = 'router-thumb-wrap';
+        if (isHuawei(model)) {
+            imgWrap.innerHTML = `
+                <svg class="brand-icon brand-icon-huawei" viewBox="0 0 32 32" aria-hidden="true">
+                    <path d="M4.896 8.188c0 0-2.469 2.359-2.604 4.854v0.464c0.109 2.016 1.63 3.203 1.63 3.203 2.438 2.385 8.344 5.385 9.729 6.063 0 0 0.083 0.042 0.135-0.010l0.026-0.052v-0.057c-3.786-8.25-8.917-14.464-8.917-14.464zM12.865 24.802c-0.026-0.109-0.13-0.109-0.13-0.109l-9.839 0.349c1.063 1.906 2.865 3.37 4.745 2.932 1.281-0.333 4.214-2.375 5.172-3.068 0.083-0.068 0.052-0.12 0.052-0.12zM12.974 23.76c-4.323-2.922-12.693-7.385-12.693-7.385-0.203 0.609-0.266 1.198-0.281 1.729v0.094c0 1.427 0.531 2.427 0.531 2.427 1.068 2.255 3.12 2.938 3.12 2.938 0.938 0.396 1.87 0.411 1.87 0.411 0.161 0.026 5.865 0 7.385 0 0.068 0 0.109-0.068 0.109-0.068v-0.078c0-0.042-0.042-0.068-0.042-0.068zM12.078 4.255c-1.938 0.495-3.328 2.198-3.427 4.198v0.547c0.042 0.802 0.214 1.401 0.214 1.401 0.88 3.865 5.151 10.198 6.068 11.531 0.068 0.068 0.135 0.042 0.135 0.042 0.052-0.021 0.083-0.078 0.078-0.135 1.417-14.13-1.479-17.891-1.479-17.891-0.427 0.026-1.589 0.307-1.589 0.307zM23.146 7.281c0 0-0.651-2.401-3.25-3.042 0 0-0.76-0.188-1.563-0.292 0 0-2.906 3.745-1.495 17.906 0.016 0.094 0.083 0.104 0.083 0.104 0.094 0.042 0.13-0.036 0.13-0.036 0.964-1.375 5.203-7.682 6.068-11.521 0 0 0.479-1.87 0.026-3.12zM19.255 24.708c0 0-0.094 0-0.12 0.063 0 0-0.016 0.094 0.036 0.135 0.932 0.682 3.802 2.667 5.177 3.068 0 0 0.214 0.068 0.573 0.078h0.182c0.922-0.026 2.536-0.49 4-3.010l-9.865-0.333zM29.693 13.495c0.188-2.75-2.589-5.297-2.589-5.307 0 0-5.13 6.214-8.891 14.401 0 0-0.042 0.104 0.026 0.172l0.052 0.010h0.083c1.411-0.703 7.276-3.693 9.703-6.052 0 0 1.536-1.24 1.615-3.224zM31.719 16.349c0 0-8.37 4.49-12.693 7.396 0 0-0.068 0.057-0.042 0.151 0 0 0.042 0.078 0.094 0.078 1.547 0 7.417 0 7.563-0.026 0 0 0.76-0.026 1.693-0.385 0 0 2.078-0.667 3.161-3.031 0 0 0.974-1.932 0.224-4.182z"/>
+                </svg>`;
+        } else {
+            const img = document.createElement('img');
+            img.className = 'router-thumb';
+            img.loading = 'lazy';
+            img.alt = `${model.brand || ''} ${model.model || ''}`.trim();
+            img.src = model.thumbnail || './assets/svg/router.svg';
+            imgWrap.append(img);
+        }
+
+        const meta = document.createElement('div');
+        meta.className = 'router-meta';
+        const brand = document.createElement('div');
+        brand.className = 'router-brand';
+        brand.textContent = model.brand || '—';
+        const name = document.createElement('div');
+        name.className = 'router-model';
+        name.textContent = model.model || '';
+        meta.append(brand, name);
+
+        header.append(imgWrap, meta);
+
+        const defaults = Array.isArray(model.defaults) && model.defaults.length ? model.defaults : fallback;
+        card.append(header);
+        const cardId = `card-${cardIdCounter++}`;
+        card.dataset.cardId = cardId;
+        CARD_REGISTRY.set(cardId, { model, defaults });
+        card.addEventListener('click', () => selectCard(cardId));
+        return card;
+    }
+
+    function initDefaults(db) {
+        routerDbSnapshot = {
+            defaultsCommon: Array.isArray(db?.defaultsCommon) ? db.defaultsCommon : [],
+            models: Array.isArray(db?.models) ? db.models : []
+        };
+        refreshRouterCards();
+    }
+
+    function autoSelectFirst() {
+        const firstCard = document.querySelector('.router-card');
+        if (firstCard) {
+            selectCard(firstCard.dataset.cardId);
+        } else {
+            setSelected(null, []);
+        }
+    }
+
+    function selectCard(cardId) {
+        if (!cardId || !CARD_REGISTRY.has(cardId)) return;
+        if (activeCardId !== cardId) {
+            if (activeCardId) {
+                const prev = document.querySelector(`[data-card-id="${activeCardId}"]`);
+                prev?.classList.remove('active');
+            }
+            const nextEl = document.querySelector(`[data-card-id="${cardId}"]`);
+            nextEl?.classList.add('active');
+            activeCardId = cardId;
+        }
+        const data = CARD_REGISTRY.get(cardId);
+        if (data) setSelected(data.model, data.defaults);
+    }
+
+    function setSelected(model, defaults) {
+        const nameEl = document.getElementById('selected-name');
+        const ipEl = document.getElementById('selected-ip');
+        const openBtn = document.getElementById('selected-open');
+        const credsWrap = document.getElementById('selected-creds');
+        const placeholder = document.getElementById('selected-placeholder');
+        if (!nameEl || !ipEl || !openBtn || !credsWrap || !placeholder) return;
+
+        if (!model) {
+            nameEl.textContent = '—';
+            ipEl.textContent = '—';
+            openBtn.href = '#';
+            openBtn.setAttribute('aria-disabled', 'true');
+            credsWrap.innerHTML = '';
+            placeholder.hidden = false;
+            return;
+        }
+
+        const title = [model.brand, model.model].filter(Boolean).join(' ') || '—';
+        nameEl.textContent = title;
+
+        const ip = deriveIp(model) || '';
+        ipEl.textContent = ip ? ip.replace(/^https?:\/\//, '') : '—';
+        if (ip) {
+            openBtn.href = ip;
+            openBtn.removeAttribute('aria-disabled');
+        } else {
+            openBtn.href = '#';
+            openBtn.setAttribute('aria-disabled', 'true');
+        }
+
+        renderSelectedCreds(credsWrap, defaults);
+        placeholder.hidden = !!(defaults && defaults.length);
+    }
+
+    function deriveIp(model) {
+        if (model?.ip) return model.ip;
+        const group = resolveGroup(model);
+        return BRAND_IP[group] || '';
+    }
+
+    function renderSelectedCreds(target, creds) {
+        target.innerHTML = '';
+        if (!Array.isArray(creds) || !creds.length) {
+            const empty = document.createElement('p');
+            empty.className = 'muted';
+            empty.setAttribute('data-i18n', 'defaults.none');
+            empty.textContent = 'Нет данных о логинах и паролях.';
+            target.append(empty);
+            window.__I18N__?.apply?.();
+            return;
+        }
+        creds.forEach(pair => target.append(createInlineCred(pair)));
+        window.__I18N__?.apply?.();
+    }
+
+    function createInlineCred(pair) {
+        const chip = document.createElement('div');
+        chip.className = 'cred-inline';
+
+        const values = document.createElement('div');
+        values.className = 'cred-inline-values';
+        values.append(buildCredSpan('label.login', 'Логин', pair.login));
+        values.append(buildCredSpan('label.password', 'Пароль', pair.password));
+        if (pair.note) {
+            const note = document.createElement('span');
+            note.className = 'tag';
+            note.textContent = pair.note;
+            values.append(note);
+        }
+
+        const btn = createCopyIconButton(() => copyCombo(pair));
+
+        chip.append(values, btn);
+        return chip;
+    }
+
+    function cleanCred(data = {}) {
+        return {
+            login: (data.login || '').trim(),
+            password: data.password ?? '',
+            note: (data.note || '').trim()
+        };
+    }
+
+    function hasCredData(cred) {
+        return Boolean(cred && (cred.login || cred.password || cred.note));
+    }
+
+    function buildCredSpan(key, fallback, value) {
+        const span = document.createElement('span');
+        const label = document.createElement('span');
+        label.setAttribute('data-i18n', key);
+        label.textContent = fallback;
+        const strong = document.createElement('strong');
+        strong.textContent = value || '—';
+        span.append(label, document.createTextNode(':'), strong);
+        return span;
+    }
+
+    // Мои модемы (localStorage)
+    function readMine() {
+        try {
+            const raw = JSON.parse(localStorage.getItem(MINE_STORAGE_KEY) || '[]');
+            if (!Array.isArray(raw)) return [];
+            return raw.map(normalizeMineEntry).filter(Boolean);
+        } catch {
+            return [];
+        }
+    }
+
+    function writeMine(items) {
+        try { localStorage.setItem(MINE_STORAGE_KEY, JSON.stringify(items)); } catch {}
+    }
+
+    function extractCreds(entry = {}) {
+        const base = Array.isArray(entry.defaults) && entry.defaults.length
+            ? entry.defaults
+            : [{ login: entry.login, password: entry.password, note: entry.note }];
+        return base.map(cleanCred).filter(hasCredData);
+    }
+
+    function createMineId() {
+        return `mine-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+    }
+
+    function normalizeMineEntry(entry = {}) {
+        if (!entry || typeof entry !== 'object') return null;
+        const defaults = extractCreds(entry);
+        if (!defaults.length) return null;
+        const brand = (entry.brand || '').trim() || getText('label.brand', 'Бренд');
+        const model = (entry.model || '').trim() || entry.note || getText('section.mine', 'Мой модем');
+        const storedGroup = (entry.group || '').trim();
+        const group = storedGroup && storedGroup !== 'auto' ? storedGroup : resolveGroup({ brand, model });
+        const groupLabel = (entry.groupLabel || '').trim();
+        return {
+            id: entry.id || createMineId(),
+            brand,
+            model,
+            group,
+            groupLabel,
+            ip: entry.ip || '',
+            defaults,
+            thumbnail: entry.thumbnail || CUSTOM_THUMBNAIL,
+            createdAt: entry.createdAt || Date.now(),
+            order: typeof entry.order === 'number' ? entry.order : CUSTOM_ORDER_BASE,
+            custom: true
+        };
+    }
+
+    function addMine(entry) {
+        const items = readMine();
+        const normalized = normalizeMineEntry(entry);
+        if (!normalized) return items;
+        items.unshift(normalized);
+        writeMine(items);
+        return items;
+    }
+
+    function removeMine(id) {
+        const filtered = readMine().filter(item => item.id !== id);
+        writeMine(filtered);
+        return filtered;
+    }
+
+    function renderMine() {
+        const list = document.getElementById('mine-list');
+        if (!list) return;
+        const items = readMine();
+        list.innerHTML = '';
+        if (!items.length) {
+            const empty = document.createElement('p');
+            empty.className = 'muted list-empty';
+            empty.setAttribute('data-i18n', 'mine.empty');
+            empty.textContent = 'Добавьте свой модем, чтобы быстро переходить к нему.';
+            list.append(empty);
+            window.__I18N__?.apply?.();
+            return;
+        }
+        items.forEach((item) => {
+            const block = document.createElement('div');
+            block.className = 'list-item';
+
+            const title = document.createElement('div');
+            title.className = 'list-title';
+            title.textContent = `${item.brand || ''} ${item.model || ''}`.trim() || '—';
+            block.append(title);
+
+            if (item.ip) {
+                const ip = document.createElement('div');
+                ip.className = 'muted';
+                ip.textContent = item.ip.replace(/^https?:\/\//, '');
+                block.append(ip);
+            }
+
+            if (Array.isArray(item.defaults) && item.defaults.length) {
+                const creds = document.createElement('div');
+                creds.className = 'cred-inline-list';
+                item.defaults.forEach(pair => creds.append(createInlineCred(pair)));
+                block.append(creds);
+            }
+
+            const row = document.createElement('div');
+            row.className = 'cred-row';
+
+            const delBtn = document.createElement('button');
+            delBtn.className = 'btn';
+            delBtn.setAttribute('data-i18n', 'action.delete');
+            delBtn.textContent = 'Удалить';
+            delBtn.addEventListener('click', () => {
+                removeMine(item.id);
+                renderMine();
+                refreshRouterCards();
+            });
+
+            row.append(delBtn);
+            block.append(row);
+            list.append(block);
+        });
+        window.__I18N__?.apply?.();
+    }
+
+    function collectMineFormData() {
+        const brand = document.getElementById('mine-brand')?.value?.trim() || '';
+        const model = document.getElementById('mine-model')?.value?.trim() || '';
+        const ip = document.getElementById('mine-ip')?.value?.trim() || '';
+        const groupSelect = document.getElementById('mine-group');
+        const customGroupInput = document.getElementById('mine-group-custom');
+        let group = groupSelect?.value || 'auto';
+        let groupLabel = '';
+        const defaults = collectCredRows(document.getElementById('mine-creds'));
+        if (!brand || !model) {
+            alert(getText('mine.validation_required', 'Укажите бренд и модель.'));
+            return null;
+        }
+        if (!defaults.length) {
+            alert(getText('mine.validation_creds', 'Добавьте хотя бы одну пару логин/пароль.'));
+            return null;
+        }
+        if (group === 'custom') {
+            const rawLabel = customGroupInput?.value?.trim() || '';
+            if (!rawLabel) {
+                alert(getText('mine.validation_group', 'Введите название новой группы.'));
+                return null;
+            }
+            const slug = slugifyGroup(rawLabel) || Date.now().toString(36);
+            group = `${CUSTOM_GROUP_PREFIX}${slug}`;
+            groupLabel = rawLabel;
+        }
+        return {
+            brand,
+            model,
+            ip,
+            group,
+            groupLabel,
+            defaults,
+            thumbnail: CUSTOM_THUMBNAIL,
+            order: CUSTOM_ORDER_BASE - 1
+        };
+    }
+
+    function collectCredRows(container) {
+        if (!container) return [];
+        const rows = Array.from(container.querySelectorAll('.cred-field-row'));
+        return rows.map(row => {
+            const login = row.querySelector('input[data-field="login"]')?.value?.trim() || '';
+            const password = row.querySelector('input[data-field="password"]')?.value || '';
+            return cleanCred({ login, password });
+        }).filter(hasCredData);
+    }
+
+    function buildMineField(config) {
+        const wrap = document.createElement('div');
+        wrap.className = 'field';
+        const inputId = `mine-${config.type}-${credFieldIdCounter++}`;
+        const label = document.createElement('label');
+        label.className = 'visually-hidden';
+        label.setAttribute('for', inputId);
+        label.setAttribute('data-i18n', config.labelKey);
+        label.textContent = config.fallback;
+        const input = document.createElement('input');
+        input.id = inputId;
+        input.dataset.field = config.type;
+        input.type = config.inputType || 'text';
+        input.placeholder = config.placeholder || '';
+        input.autocomplete = config.autocomplete || 'off';
+        input.value = config.value || '';
+        wrap.append(label, input);
+        return wrap;
+    }
+
+    function createCredFieldRow(values = {}) {
+        const row = document.createElement('div');
+        row.className = 'cred-field-row';
+
+        row.append(
+            buildMineField({
+                type: 'login',
+                labelKey: 'label.login',
+                fallback: 'Логин',
+                placeholder: 'admin',
+                autocomplete: 'username',
+                value: values.login || ''
+            }),
+            buildMineField({
+                type: 'password',
+                labelKey: 'label.password',
+                fallback: 'Пароль',
+                placeholder: 'admin',
+                autocomplete: 'current-password',
+                inputType: 'text',
+                value: values.password || ''
+            })
+        );
+
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'remove-cred-btn';
+        removeBtn.setAttribute('aria-label', getText('action.delete', 'Удалить'));
+        removeBtn.innerHTML = `
+            <svg viewBox="0 0 20 20" aria-hidden="true">
+                <path d="M5 5l10 10M15 5L5 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+        `;
+        removeBtn.addEventListener('click', () => {
+            const parent = row.parentElement;
+            row.remove();
+            if (parent && !parent.querySelector('.cred-field-row')) {
+                parent.append(createCredFieldRow());
+            }
+        });
+
+        row.append(removeBtn);
+        return row;
+    }
+
+    function resetCredFields(container) {
+        if (!container) return;
+        container.innerHTML = '';
+        container.append(createCredFieldRow());
+    }
+
+    function initMine() {
+        const form = document.getElementById('mine-form');
+        const clearBtn = document.getElementById('mine-clear');
+        const credList = document.getElementById('mine-creds');
+        const addCredBtn = document.getElementById('mine-add-cred');
+        const groupInput = document.getElementById('mine-group');
+        const groupToggle = document.getElementById('mine-group-toggle');
+        const groupMenu = document.getElementById('mine-group-menu');
+        const groupLabelEl = document.getElementById('mine-group-current');
+        const groupPicker = document.querySelector('[data-group-picker]');
+        const customGroupWrap = document.getElementById('mine-group-custom-wrap');
+        const customGroupInput = document.getElementById('mine-group-custom');
+
+        resetCredFields(credList);
+
+        if (groupMenu) {
+            groupMenu.setAttribute('hidden', 'true');
+        }
+        if (groupToggle) {
+            groupToggle.setAttribute('aria-expanded', 'false');
+        }
+
+        const updateGroupFieldVisibility = () => {
+            if (!customGroupWrap) return;
+            const isCustom = groupInput?.value === 'custom';
+            if (isCustom) {
+                customGroupWrap.removeAttribute('hidden');
+            } else {
+                customGroupWrap.setAttribute('hidden', 'true');
+                if (customGroupInput && customGroupInput.value && (!groupInput || groupInput.value !== 'custom')) {
+                    customGroupInput.value = '';
+                }
+            }
+        };
+
+        const syncGroupLabel = () => {
+            if (!groupLabelEl) return;
+            const currentValue = groupInput?.value || 'auto';
+            let labelKey = null;
+            let labelText = '';
+            if (groupMenu) {
+                groupMenu.querySelectorAll('button').forEach(btn => {
+                    const isActive = btn.dataset.value === currentValue;
+                    btn.classList.toggle('active', isActive);
+                    if (isActive) {
+                        labelKey = btn.dataset.labelKey || null;
+                        labelText = btn.textContent.trim();
+                    }
+                });
+            }
+            if (!labelText) {
+                labelKey = 'group.auto';
+                labelText = getText('group.auto', 'Определить автоматически');
+            }
+            groupLabelEl.textContent = labelText;
+            if (labelKey) {
+                groupLabelEl.setAttribute('data-i18n', labelKey);
+            } else {
+                groupLabelEl.removeAttribute('data-i18n');
+            }
+        };
+
+        const setGroupValue = (value) => {
+            if (groupInput) groupInput.value = value;
+            syncGroupLabel();
+            updateGroupFieldVisibility();
+        };
+
+        const handleOptionClick = (event) => {
+            const option = event.target.closest('button[data-value]');
+            if (!option) return;
+            const value = option.dataset.value || 'auto';
+            setGroupValue(value);
+            closeGroupMenu();
+        };
+
+        const handleOutsideClick = (event) => {
+            if (!groupPicker) {
+                closeGroupMenu();
+                return;
+            }
+            if (groupPicker.contains(event.target)) return;
+            closeGroupMenu();
+        };
+
+        const handleEscape = (event) => {
+            if (event.key === 'Escape') {
+                closeGroupMenu();
+            }
+        };
+
+        const openGroupMenu = () => {
+            if (!groupMenu || !groupToggle) return;
+            if (groupMenu.hasAttribute('hidden') === false) return;
+            groupMenu.removeAttribute('hidden');
+            groupToggle.setAttribute('aria-expanded', 'true');
+            document.addEventListener('click', handleOutsideClick);
+            document.addEventListener('keydown', handleEscape);
+        };
+
+        const closeGroupMenu = () => {
+            if (!groupMenu) return;
+            if (groupMenu.hasAttribute('hidden')) return;
+            groupMenu.setAttribute('hidden', 'true');
+            groupToggle?.setAttribute('aria-expanded', 'false');
+            document.removeEventListener('click', handleOutsideClick);
+            document.removeEventListener('keydown', handleEscape);
+        };
+
+        groupMenu?.addEventListener('click', handleOptionClick);
+        groupToggle?.addEventListener('click', (event) => {
+            event.stopPropagation();
+            if (groupMenu && groupMenu.hasAttribute('hidden')) {
+                openGroupMenu();
+            } else {
+                closeGroupMenu();
+            }
+        });
+
+        syncGroupLabel();
+        updateGroupFieldVisibility();
+
+        addCredBtn?.addEventListener('click', () => {
+            credList?.append(createCredFieldRow());
+        });
+
+        form?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const entry = collectMineFormData();
+            if (!entry) return;
+            addMine(entry);
+            form.reset();
+            closeGroupMenu();
+            setGroupValue(groupInput?.value || 'auto');
+            updateGroupFieldVisibility();
+            resetCredFields(credList);
+            renderMine();
+            refreshRouterCards();
+        });
+
+        clearBtn?.addEventListener('click', () => {
+            form?.reset();
+            closeGroupMenu();
+            setGroupValue(groupInput?.value || 'auto');
+            updateGroupFieldVisibility();
+            resetCredFields(credList);
+        });
+
+        renderMine();
+    }
+
+    async function init() {
+        initTheme();
+        const db = await loadRouterDb();
+        initDefaults(db);
+        initMine();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+})();
+
+

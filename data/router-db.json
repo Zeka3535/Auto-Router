@@ -1,0 +1,68 @@
+{
+  "defaultsCommon": [
+    { "login": "admin", "password": "admin" },
+    { "login": "admin", "password": "password" },
+    { "login": "admin", "password": "" },
+    { "login": "user", "password": "admin" }
+  ],
+  "models": [
+    {
+      "brand": "PhotonSpeak",
+      "model": "МА670",
+      "group": ["huawei", "zte"],
+      "order": 0,
+      "ip": "http://192.168.1.1",
+      "thumbnail": "./assets/svg/router.svg",
+      "defaults": [
+        { "login": "user", "password": "user" },
+        { "login": "Administrator", "password": "qazwsx" }
+      ]
+    },
+    {
+      "brand": "Tenda",
+      "model": "TS4224",
+      "group": "huawei",
+      "ip": "http://192.168.100.1",
+      "thumbnail": "./assets/svg/router.svg",
+      "defaults": [
+        { "login": "admin", "password": "admin" },
+        { "login": "admin", "password": "Admin123" }
+      ]
+    },
+    {
+      "brand": "Huawei",
+      "model": "HG8145v5",
+      "group": "huawei",
+      "ip": "http://192.168.100.1",
+      "thumbnail": "./assets/svg/router.svg",
+      "defaults": [
+        { "login": "root", "password": "admin" },
+        { "login": "user", "password": "user" },
+        { "login": "admin", "password": "admin" }
+      ]
+    },
+    {
+      "brand": "Huawei",
+      "model": "HG8245",
+      "group": "huawei",
+      "ip": "http://192.168.100.1",
+      "thumbnail": "./assets/svg/router.svg",
+      "defaults": [
+        { "login": "telecomadmin", "password": "admintelecom" },
+        { "login": "root", "password": "admin" }
+      ]
+    },
+    {
+      "brand": "ZTE",
+      "model": "AT4",
+      "group": "zte",
+      "ip": "http://192.168.1.1",
+      "thumbnail": "./assets/svg/zte.svg",
+      "defaults": [
+        { "login": "admin", "password": "admin" }
+      ]
+    }
+  ]
+}
+
+

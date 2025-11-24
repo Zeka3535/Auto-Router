@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="ru" data-theme="dark">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark light">
+    <title data-i18n="app.title">Доступ к админке роутера</title>
+    <link rel="preload" href="./styles.css" as="style">
+    <link rel="stylesheet" href="./styles.css">
+    <link rel="manifest" href="./site.webmanifest">
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg">
+    <link rel="icon" type="image/x-icon" href="./favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="./favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
+    <meta property="og:image" content="./ogimage.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="./ogimage.png">
+</head>
+<body>
+    <!-- Хедер приложения: логотип, переключатели темы и языка -->
+    <header class="app-header">
+        <div class="brand">
+            <svg class="logo" viewBox="0 0 512 512" aria-hidden="true">
+                <path d="M473.736 285.897h-16.761v-65.14c0-8.888-3.461-17.243-9.745-23.527a33.2 33.2 0 0 0-10.392-7.054v-85.945c0-7.253-5.882-13.136-13.136-13.136s-13.136 5.882-13.136 13.136v85.96c-11.839 5.103-20.15 16.882-20.15 30.567v65.139H121.585v-65.139c0-8.888-3.461-17.243-9.762-23.544a33.4 33.4 0 0 0-10.388-7.037v-85.945c0-7.253-5.882-13.136-13.136-13.136s-13.136 5.882-13.136 13.136v85.962c-11.833 5.104-20.137 16.882-20.137 30.564v65.14H38.264C17.164 285.897 0 303.061 0 324.161v58.48c0 21.1 17.164 38.264 38.264 38.264h435.472c21.1 0 38.264-17.164 38.264-38.264v-58.48c0-21.1-17.164-38.264-38.264-38.264m-50.032-72.141a6.97 6.97 0 0 1 4.951 2.052 6.97 6.97 0 0 1 2.052 4.951v65.139h-14.016v-65.141h-.001c-.001-3.86 3.147-7.001 7.014-7.001m-342.406 7.001a7.009 7.009 0 0 1 11.964-4.949 6.97 6.97 0 0 1 2.052 4.951v65.139H81.298zM485.73 382.64c0 6.612-5.38 11.993-11.993 11.993H38.264c-6.612 0-11.993-5.38-11.993-11.993v-58.48c0-6.612 5.38-11.993 11.993-11.993h435.474c6.612 0 11.993 5.38 11.993 11.993z"/>
+                <path d="M231.924 340.266H88.299c-7.254 0-13.136 5.882-13.136 13.136s5.882 13.136 13.136 13.136h143.625c7.253 0 13.136-5.882 13.136-13.136-.001-7.254-5.883-13.136-13.136-13.136m64.798 0h-23.644c-7.253 0-13.136 5.882-13.136 13.136s5.882 13.136 13.136 13.136h23.644c7.253 0 13.136-5.882 13.136-13.136-.001-7.254-5.883-13.136-13.136-13.136m63.484 0h-23.644c-7.253 0-13.136 5.882-13.136 13.136s5.882 13.136 13.136 13.136h23.644c7.253 0 13.136-5.882 13.136-13.136s-5.882-13.136-13.136-13.136m63.498 0H400.06c-7.253 0-13.136 5.882-13.136 13.136s5.882 13.136 13.136 13.136h23.644c7.253 0 13.136-5.882 13.136-13.136-.001-7.254-5.883-13.136-13.136-13.136"/>
+            </svg>
+            <span class="title" data-i18n="app.title">Доступ к админке роутера</span>
+        </div>
+
+        <div class="header-actions">
+            <button id="theme-toggle" class="theme-toggle" aria-label="Переключить тему">
+                <svg class="theme-icon theme-sun" viewBox="0 0 384 512" aria-hidden="true">
+                    <path d="M272 384c9.6-31.9 29.5-59.1 49.2-86.2l0 0c5.2-7.1 10.4-14.2 15.4-21.4c19.8-28.5 31.4-63 31.4-100.3C368 78.8 289.2 0 192 0S16 78.8 16 176c0 37.3 11.6 71.9 31.4 100.3c5 7.2 10.2 14.3 15.4 21.4l0 0c19.8 27.1 39.7 54.4 49.2 86.2H272zM192 512c44.2 0 80-35.8 80-80V416H112v16c0 44.2 35.8 80 80 80zM112 176c0 8.8-7.2 16-16 16s-16-7.2-16-16c0-61.9 50.1-112 112-112c8.8 0 16 7.2 16 16s-7.2 16-16 16c-44.2 0-80 35.8-80 80z"/>
+                </svg>
+                <svg class="theme-icon theme-moon" viewBox="0 0 384 512" aria-hidden="true">
+                    <path d="M297.2 248.9C311.6 228.3 320 203.2 320 176c0-70.7-57.3-128-128-128S64 105.3 64 176c0 27.2 8.4 52.3 22.8 72.9c3.7 5.3 8.1 11.3 12.8 17.7l0 0c12.9 17.7 28.3 38.9 39.8 59.8c10.4 19 15.7 38.8 18.3 57.5H109c-2.2-12-5.9-23.7-11.8-34.5c-9.9-18-22.2-34.9-34.5-51.8l0 0 0 0c-5.2-7.1-10.4-14.2-15.4-21.4C27.6 247.9 16 213.3 16 176C16 78.8 94.8 0 192 0s176 78.8 176 176c0 37.3-11.6 71.9-31.4 100.3c-5 7.2-10.2 14.3-15.4 21.4l0 0 0 0c-12.3 16.8-24.6 33.7-34.5 51.8c-5.9 10.8-9.6 22.5-11.8 34.5H226.4c2.6-18.7 7.9-38.6 18.3-57.5c11.5-20.9 26.9-42.1 39.8-59.8l0 0 0 0 0 0c4.7-6.4 9-12.4 12.7-17.7zM192 128c-26.5 0-48 21.5-48 48c0 8.8-7.2 16-16 16s-16-7.2-16-16c0-44.2 35.8-80 80-80c8.8 0 16 7.2 16 16s-7.2 16-16 16zm0 384c-44.2 0-80-35.8-80-80V416H272v16c0 44.2-35.8 80-80 80z"/>
+                </svg>
+            </button>
+        <div class="lang-switcher">
+            <span id="lang-menu-label" class="visually-hidden" data-i18n="lang.switch">Язык</span>
+            <button id="lang-toggle" class="icon-btn lang-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-labelledby="lang-menu-label" data-lang="ru">
+                <svg class="flag flag-ru" viewBox="0 0 24 16" aria-hidden="true">
+                    <rect width="24" height="16" fill="#ffffff"/>
+                    <rect y="5.33" width="24" height="5.34" fill="#1f65cc"/>
+                    <rect y="10.67" width="24" height="5.33" fill="#ce2738"/>
+                </svg>
+                <svg class="flag flag-en" viewBox="0 0 24 16" aria-hidden="true">
+                    <rect width="24" height="16" fill="#b22234"/>
+                    <rect y="2" width="24" height="2" fill="#ffffff"/>
+                    <rect y="6" width="24" height="2" fill="#ffffff"/>
+                    <rect y="10" width="24" height="2" fill="#ffffff"/>
+                    <rect y="14" width="24" height="2" fill="#ffffff"/>
+                    <rect width="10" height="8" fill="#1f2a7a"/>
+                    <circle cx="2" cy="2" r="0.6" fill="#ffffff"/>
+                    <circle cx="4" cy="3.3" r="0.6" fill="#ffffff"/>
+                    <circle cx="6" cy="2" r="0.6" fill="#ffffff"/>
+                    <circle cx="8" cy="3.3" r="0.6" fill="#ffffff"/>
+                    <circle cx="4" cy="5.3" r="0.6" fill="#ffffff"/>
+                    <circle cx="2" cy="6.6" r="0.6" fill="#ffffff"/>
+                    <circle cx="6" cy="6.6" r="0.6" fill="#ffffff"/>
+                    <circle cx="8" cy="5.3" r="0.6" fill="#ffffff"/>
+                </svg>
+                <span class="lang-btn-label">RU</span>
+                <svg class="caret" viewBox="0 0 12 8" aria-hidden="true">
+                    <path d="M1 1l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            </button>
+            <div id="lang-menu" class="lang-menu" hidden role="menu" aria-labelledby="lang-menu-label">
+                <button type="button" data-lang="ru" role="menuitem">
+                    <svg viewBox="0 0 24 16" aria-hidden="true">
+                        <rect width="24" height="16" fill="#ffffff"/>
+                        <rect y="5.33" width="24" height="5.34" fill="#1f65cc"/>
+                        <rect y="10.67" width="24" height="5.33" fill="#ce2738"/>
+                    </svg>
+                    <span>Русский</span>
+                </button>
+                <button type="button" data-lang="en" role="menuitem">
+                    <svg viewBox="0 0 24 16" aria-hidden="true">
+                        <rect width="24" height="16" fill="#b22234"/>
+                        <rect y="2" width="24" height="2" fill="#ffffff"/>
+                        <rect y="6" width="24" height="2" fill="#ffffff"/>
+                        <rect y="10" width="24" height="2" fill="#ffffff"/>
+                        <rect y="14" width="24" height="2" fill="#ffffff"/>
+                        <rect width="10" height="8" fill="#1f2a7a"/>
+                        <circle cx="2" cy="2" r="0.6" fill="#ffffff"/>
+                        <circle cx="4" cy="3.3" r="0.6" fill="#ffffff"/>
+                        <circle cx="6" cy="2" r="0.6" fill="#ffffff"/>
+                        <circle cx="8" cy="3.3" r="0.6" fill="#ffffff"/>
+                        <circle cx="4" cy="5.3" r="0.6" fill="#ffffff"/>
+                        <circle cx="2" cy="6.6" r="0.6" fill="#ffffff"/>
+                        <circle cx="6" cy="6.6" r="0.6" fill="#ffffff"/>
+                        <circle cx="8" cy="5.3" r="0.6" fill="#ffffff"/>
+                    </svg>
+                    <span>English</span>
+                </button>
+            </div>
+        </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- Информация о выбранном модеме -->
+        <section class="card selected-card" id="selected-card">
+            <div class="selected-head">
+                <div>
+                    <div class="selected-label" data-i18n="selected.title">Выбранный модем</div>
+                    <div id="selected-name" class="selected-name">—</div>
+                </div>
+            </div>
+            <div class="selected-meta">
+                <div>
+                    <span data-i18n="selected.ip">Адрес:</span>
+                    <strong id="selected-ip">—</strong>
+                </div>
+            </div>
+            <div id="selected-creds" class="cred-inline-list"></div>
+            <p id="selected-placeholder" class="muted" data-i18n="selected.placeholder">Выберите модем ниже, чтобы увидеть логины и пароли.</p>
+            <div class="selected-actions">
+                <a id="selected-open" class="btn outline primary" href="#" target="_blank" rel="noopener" data-i18n="selected.open">Открыть настройки</a>
+            </div>
+        </section>
+
+        <!-- Подсказки логина/пароля -->
+        <section class="card">
+            <h2 data-i18n="section.defaults">Подсказки логина/пароля</h2>
+            <p class="muted" data-i18n="defaults.hint">Выберите модем из списка, чтобы быстро скопировать логины и пароли.</p>
+            <div id="router-groups" class="brand-groups"></div>
+        </section>
+
+        <!-- Мои данные -->
+        <section class="card">
+            <h2 data-i18n="section.mine">Мои данные</h2>
+            <form id="mine-form" class="mine-form">
+                <div class="row gap">
+                    <div class="field">
+                        <label for="mine-brand" data-i18n="label.brand">Бренд</label>
+                        <input id="mine-brand" autocomplete="off" placeholder="Huawei">
+                    </div>
+                    <div class="field">
+                        <label for="mine-model" data-i18n="label.model">Модель</label>
+                        <input id="mine-model" autocomplete="off" placeholder="HG8245H">
+                    </div>
+                </div>
+                <div class="row gap">
+                    <div class="field">
+                        <label for="mine-group-toggle" data-i18n="label.group">Группа</label>
+                        <div class="kebab-field" data-group-picker>
+                            <input type="hidden" id="mine-group" value="auto">
+                            <button type="button" id="mine-group-toggle" class="kebab-btn" aria-haspopup="true" aria-expanded="false">
+                                <span id="mine-group-current" data-i18n="group.auto">Определить автоматически</span>
+                                <svg class="kebab-icon" viewBox="0 0 4 16" aria-hidden="true">
+                                    <circle cx="2" cy="2" r="1.4"/>
+                                    <circle cx="2" cy="8" r="1.4"/>
+                                    <circle cx="2" cy="14" r="1.4"/>
+                                </svg>
+                            </button>
+                            <div id="mine-group-menu" class="kebab-menu" hidden role="menu" aria-labelledby="mine-group-toggle">
+                                <button type="button" role="menuitemradio" data-value="auto" data-label-key="group.auto">
+                                    <span data-i18n="group.auto">Определить автоматически</span>
+                                </button>
+                                <button type="button" role="menuitemradio" data-value="huawei" data-label-key="brand.huawei">
+                                    <span data-i18n="brand.huawei">OLT Huawei</span>
+                                </button>
+                                <button type="button" role="menuitemradio" data-value="zte" data-label-key="brand.zte">
+                                    <span data-i18n="brand.zte">OLT ZTE</span>
+                                </button>
+                                <button type="button" role="menuitemradio" data-value="custom" data-label-key="group.custom">
+                                    <span data-i18n="group.custom">Своя группа</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label for="mine-ip" data-i18n="label.ip">IP адрес (необязательно)</label>
+                        <input id="mine-ip" inputmode="numeric" autocomplete="off" placeholder="192.168.1.1">
+                    </div>
+                </div>
+                <div class="row gap" id="mine-group-custom-wrap" hidden>
+                    <div class="field">
+                        <label for="mine-group-custom" data-i18n="label.custom_group">Название группы</label>
+                        <input id="mine-group-custom" autocomplete="off" data-i18n-placeholder="placeholder.custom_group" placeholder="Например, Keenetic">
+                    </div>
+                </div>
+                <div class="field">
+                    <label data-i18n="label.defaults">Пары логин/пароль</label>
+                    <div id="mine-creds" class="cred-field-list"></div>
+                    <button type="button" id="mine-add-cred" class="btn ghost" data-i18n="action.add_cred">Добавить пару</button>
+                </div>
+                <div class="row form-actions">
+                    <button type="submit" class="btn primary" data-i18n="action.save">Сохранить</button>
+                    <button type="button" id="mine-clear" class="btn" data-i18n="action.clear">Очистить</button>
+                </div>
+            </form>
+            <div id="mine-list" class="list"></div>
+        </section>
+    </main>
+
+    <script src="./i18n/i18n.js" defer></script>
+    <script src="./app.js" defer></script>
+</body>
+</html>
+
+
