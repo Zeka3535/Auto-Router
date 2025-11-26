@@ -481,7 +481,17 @@ body {
 }
 
 .tools-tab-content.active {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.tools-tab-content[data-content="speedtest"].active {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
 }
 
 .ping-form {
@@ -589,78 +599,58 @@ body {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  align-items: flex-start;
+  height: 100%;
+  min-height: 500px;
 }
 
-.speedtest-section p {
+.speedtest-header {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.speedtest-header p {
   margin: 0;
 }
 
-.speedtest-logo-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0;
-  margin-top: 8px;
-  width: 100%;
-}
-
-.speedtest-logo-link {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-decoration: none;
-  transition: opacity 0.2s ease;
-  width: 100%;
-}
-
-.speedtest-logo-link:hover {
-  opacity: 0.8;
-}
-
-.speedtest-button {
-  background: var(--card);
+.speedtest-iframe-container {
+  flex: 1;
+  min-height: 500px;
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 8px 12px;
-  gap: 8px;
-  transition: all 0.2s ease;
-  cursor: pointer;
-  width: 100%;
-  justify-content: center;
-}
-:root[data-theme="light"] .speedtest-button {
-  background: var(--accent);
-  border-color: transparent;
-}
-
-.speedtest-button:hover {
+  overflow: hidden;
   background: var(--card-strong);
-  border-color: var(--accent);
-  opacity: 1;
-}
-:root[data-theme="light"] .speedtest-button:hover {
-  filter: brightness(1.05);
-  background: var(--accent);
-  border-color: transparent;
+  position: relative;
 }
 
-.speedtest-logo-image {
+#speedtest-iframe {
+  width: 100%;
+  height: 100%;
+  min-height: 500px;
+  border: none;
   display: block;
-  height: 37px;
-  width: auto;
-  pointer-events: none;
+  background: var(--card-strong);
 }
 
-.speedtest-logo-icon {
-  height: 38px;
-  width: 38px;
-  pointer-events: none;
+.speedtest-iframe-error {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--muted);
 }
 
-.speedtest-logo-text {
-  height: 37px;
-  pointer-events: none;
+.speedtest-iframe-error.show {
+  display: flex;
+}
+
+.speedtest-iframe-error svg {
+  width: 48px;
+  height: 48px;
+  color: var(--muted);
 }
 
 .scanner-form {
@@ -932,34 +922,19 @@ body {
   
   .speedtest-section {
     gap: 12px;
+    min-height: 400px;
   }
   
-  .speedtest-section p {
+  .speedtest-header p {
     font-size: 14px;
   }
   
-  .speedtest-logo-container {
-    width: 100%;
-    justify-content: center;
+  .speedtest-iframe-container {
+    min-height: 400px;
   }
   
-  .speedtest-button {
-    width: 100%;
-    justify-content: center;
-    padding: 10px 16px;
-  }
-  
-  .speedtest-logo-image {
-    height: 32px;
-  }
-  
-  .speedtest-logo-icon {
-    height: 35px;
-    width: 35px;
-  }
-  
-  .speedtest-logo-text {
-    height: 32px;
+  #speedtest-iframe {
+    min-height: 400px;
   }
   
   .mine-form {
@@ -1067,6 +1042,287 @@ body {
 /* Улучшенные области тапа для мобильных */
 button, a, input, select { min-height: 44px; }
 
+/* Traceroute */
+.traceroute-form {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.traceroute-results {
+  margin-top: 24px;
+}
+
+.traceroute-path {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.traceroute-hop {
+  display: grid;
+  grid-template-columns: 40px 1fr 120px;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--card-strong);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  align-items: center;
+}
+
+.traceroute-hop-number {
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.traceroute-hop-ip {
+  font-family: monospace;
+  color: var(--fg);
+}
+
+.traceroute-hop-time {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.traceroute-info {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px;
+  background: var(--card-strong);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.traceroute-info-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto;
+  background: var(--card);
+  border-radius: 50%;
+  color: var(--accent);
+}
+
+.traceroute-info-icon svg {
+  width: 32px;
+  height: 32px;
+}
+
+.traceroute-info-text {
+  margin: 0;
+  text-align: center;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.traceroute-alternatives {
+  margin-top: 8px;
+}
+
+.traceroute-alternatives h4 {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.traceroute-alternatives ul {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.traceroute-alternatives li {
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.traceroute-alternatives code {
+  background: var(--card);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.9em;
+  color: var(--accent);
+}
+
+.traceroute-alternatives a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.traceroute-alternatives a:hover {
+  text-decoration: underline;
+}
+
+.traceroute-example {
+  margin-top: 8px;
+  padding: 16px;
+  background: var(--card);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.traceroute-example h4 {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.traceroute-code {
+  display: block;
+  padding: 12px;
+  background: var(--card-strong);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: monospace;
+  font-size: 14px;
+  color: var(--fg);
+  margin-bottom: 12px;
+  word-break: break-all;
+}
+
+.traceroute-copy-btn {
+  width: 100%;
+}
+
+/* Калькулятор подсетей */
+.subnet-form {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.subnet-results {
+  margin-top: 24px;
+}
+
+.subnet-info {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.subnet-info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: var(--card-strong);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.subnet-info-label {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.subnet-info-value {
+  font-family: monospace;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+/* Проверка подключения */
+.connection-check {
+  display: grid;
+  gap: 24px;
+}
+
+.connection-results {
+  margin-top: 24px;
+}
+
+.connection-info {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.connection-info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: var(--card-strong);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.connection-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.connection-status.online {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+.connection-status.offline {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.connection-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* Экспорт/Импорт */
+.export-import-section {
+  display: grid;
+  gap: 32px;
+}
+
+.export-section,
+.import-section {
+  display: grid;
+  gap: 12px;
+}
+
+.export-section h3,
+.import-section h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.import-status {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.import-status.success {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.import-status.error {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
 /* Модалка */
 /* модальные стили удалены по требованию */
 
@@ -1087,5 +1343,58 @@ button, a, input, select { min-height: 44px; }
   .cred-field-row .field { min-width: 100px; }
   .form-actions { flex-wrap: nowrap; }
   .form-actions .btn { flex: 1 1 0; min-width: 0; }
+  
+  .traceroute-hop {
+    grid-template-columns: 30px 1fr 80px;
+    font-size: 12px;
+    padding: 8px 10px;
+  }
+  
+  .traceroute-info {
+    padding: 16px;
+    gap: 16px;
+  }
+  
+  .traceroute-info-icon {
+    width: 48px;
+    height: 48px;
+  }
+  
+  .traceroute-info-icon svg {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .traceroute-info-text {
+    font-size: 14px;
+  }
+  
+  .traceroute-alternatives ul {
+    gap: 6px;
+  }
+  
+  .traceroute-alternatives li {
+    font-size: 13px;
+  }
+  
+  .traceroute-example {
+    padding: 12px;
+  }
+  
+  .traceroute-code {
+    font-size: 12px;
+    padding: 10px;
+  }
+  
+  .subnet-info-item,
+  .connection-info-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  
+  .export-import-section {
+    gap: 24px;
+  }
 }
 

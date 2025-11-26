@@ -184,6 +184,10 @@
                 <button type="button" class="tools-tab" data-tab="ping" role="tab" aria-selected="false" data-i18n="tools.ping">Пинг</button>
                 <button type="button" class="tools-tab" data-tab="speedtest" role="tab" aria-selected="false" data-i18n="tools.speedtest">Проверка скорости</button>
                 <button type="button" class="tools-tab" data-tab="scanner" role="tab" aria-selected="false" data-i18n="tools.scanner">Сканер сети</button>
+                <button type="button" class="tools-tab" data-tab="traceroute" role="tab" aria-selected="false" data-i18n="tools.traceroute">Traceroute</button>
+                <button type="button" class="tools-tab" data-tab="subnet" role="tab" aria-selected="false" data-i18n="tools.subnet">Калькулятор подсетей</button>
+                <button type="button" class="tools-tab" data-tab="connection" role="tab" aria-selected="false" data-i18n="tools.connection">Проверка подключения</button>
+                <button type="button" class="tools-tab" data-tab="export" role="tab" aria-selected="false" data-i18n="tools.export">Экспорт/Импорт</button>
             </div>
             <div class="tools-content">
                 <!-- Секция роутеров -->
@@ -329,18 +333,115 @@
                 <!-- Секция интернетометра -->
                 <div class="tools-tab-content" data-content="speedtest" role="tabpanel">
                     <div class="speedtest-section">
-                        <p class="muted" data-i18n="tools.speedtest_desc">Проверьте скорость вашего интернет-соединения с помощью Яндекс Интернетометра.</p>
-                        <div class="speedtest-logo-container">
-                            <a href="https://yandex.by/internet" class="speedtest-logo-link speedtest-button" target="_blank" rel="noopener" aria-label="Яндекс Интернетометр">
-                                <img src="./assets/svg/YandexInt/Yanintlogo1.svg" class="speedtest-logo-image speedtest-logo-text" alt="Интернетометр" draggable="false">
-                                <img src="./assets/svg/YandexInt/Yanintlogo2.svg" class="speedtest-logo-image speedtest-logo-icon" alt="Интернетометр" draggable="false">
-                                <img src="./assets/svg/YandexInt/Yanintlogo3.svg" class="speedtest-logo-image" alt="Яндекс" draggable="false">
-                            </a>
+                        <div class="speedtest-header">
+                            <p class="muted" data-i18n="tools.speedtest_desc">Проверьте скорость вашего интернет-соединения с помощью Яндекс Интернетометра.</p>
+                            <a href="https://yandex.by/internet" class="btn outline" target="_blank" rel="noopener" data-i18n="tools.speedtest_open_new">Открыть в новой вкладке</a>
+                        </div>
+                        <div class="speedtest-iframe-container">
+                            <iframe 
+                                id="speedtest-iframe" 
+                                src="https://yandex.by/internet" 
+                                title="Яндекс Интернетометр"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowfullscreen
+                                loading="lazy">
+                            </iframe>
+                            <div id="speedtest-iframe-error" class="speedtest-iframe-error">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <line x1="12" y1="8" x2="12" y2="12"/>
+                                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                                </svg>
+                                <p data-i18n="tools.speedtest_iframe_error">Не удалось загрузить страницу. Используйте кнопку выше, чтобы открыть в новой вкладке.</p>
+                            </div>
                         </div>
                     </div>
                 </div>
                 <!-- Секция сканера сети -->
                 <div class="tools-tab-content" data-content="scanner" role="tabpanel">
+                    <form id="scanner-form" class="scanner-form">
+                        <div class="field">
+                            <label for="scanner-range" data-i18n="tools.scanner_range">Диапазон IP адресов</label>
+                            <input id="scanner-range" type="text" autocomplete="off" placeholder="192.168.1.1-254" value="192.168.1.1-254" aria-required="true">
+                            <small class="field-hint" data-i18n="tools.scanner_range_hint">Формат: XXX.XXX.XXX.1-254 или XXX.XXX.XXX.1,XXX.XXX.XXX.2</small>
+                        </div>
+                        <div class="field">
+                            <label for="scanner-timeout" data-i18n="tools.scanner_timeout">Таймаут (мс)</label>
+                            <input id="scanner-timeout" type="number" min="200" max="2000" value="200" aria-required="true">
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn primary" id="scanner-start" data-i18n="tools.scanner_start">Начать сканирование</button>
+                            <button type="button" class="btn secondary" id="scanner-stop" data-i18n="tools.scanner_stop" hidden>Остановить</button>
+                        </div>
+                    </form>
+                    <div id="scanner-results" class="scanner-results" hidden>
+                        <div class="scanner-progress-header">
+                            <h3 data-i18n="tools.scanner_results">Результаты сканирования</h3>
+                            <div id="scanner-progress-text" class="scanner-progress-text"></div>
+                        </div>
+                        <div id="scanner-progress" class="scanner-progress"></div>
+                        <div id="scanner-devices" class="scanner-devices"></div>
+                    </div>
+                </div>
+                <!-- Секция Traceroute -->
+                <div class="tools-tab-content" data-content="traceroute" role="tabpanel">
+                    <form id="traceroute-form" class="traceroute-form">
+                        <div class="field">
+                            <label for="traceroute-target" data-i18n="tools.traceroute_target">IP адрес или домен</label>
+                            <input id="traceroute-target" type="text" autocomplete="off" value="google.com" aria-required="true">
+                        </div>
+                        <button type="submit" class="btn primary" id="traceroute-start" data-i18n="tools.traceroute_start">Начать трассировку</button>
+                    </form>
+                    <div id="traceroute-results" class="traceroute-results" hidden>
+                        <h3 data-i18n="tools.traceroute_results">Результаты трассировки</h3>
+                        <div id="traceroute-path" class="traceroute-path"></div>
+                    </div>
+                </div>
+                <!-- Секция Калькулятор подсетей -->
+                <div class="tools-tab-content" data-content="subnet" role="tabpanel">
+                    <form id="subnet-form" class="subnet-form">
+                        <div class="field">
+                            <label for="subnet-ip" data-i18n="tools.subnet_ip">IP адрес</label>
+                            <input id="subnet-ip" type="text" autocomplete="off" placeholder="192.168.1.0" value="192.168.1.0" aria-required="true">
+                        </div>
+                        <div class="field">
+                            <label for="subnet-mask" data-i18n="tools.subnet_mask">Маска подсети</label>
+                            <input id="subnet-mask" type="text" autocomplete="off" placeholder="255.255.255.0 или /24" value="/24" aria-required="true">
+                        </div>
+                        <button type="submit" class="btn primary" id="subnet-calculate" data-i18n="tools.subnet_calculate">Рассчитать</button>
+                    </form>
+                    <div id="subnet-results" class="subnet-results" hidden>
+                        <h3 data-i18n="tools.subnet_results">Результаты расчёта</h3>
+                        <div id="subnet-info" class="subnet-info"></div>
+                    </div>
+                </div>
+                <!-- Секция Проверка подключения -->
+                <div class="tools-tab-content" data-content="connection" role="tabpanel">
+                    <div class="connection-check">
+                        <button type="button" class="btn primary" id="connection-check-btn" data-i18n="tools.connection_check">Проверить подключение</button>
+                        <div id="connection-results" class="connection-results" hidden>
+                            <h3 data-i18n="tools.connection_status">Статус подключения</h3>
+                            <div id="connection-info" class="connection-info"></div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Секция Экспорт/Импорт -->
+                <div class="tools-tab-content" data-content="export" role="tabpanel">
+                    <div class="export-import-section">
+                        <div class="export-section">
+                            <h3 data-i18n="tools.export_title">Экспорт настроек</h3>
+                            <p class="muted" data-i18n="tools.export_desc">Скачайте резервную копию всех сохранённых роутеров</p>
+                            <button type="button" class="btn primary" id="export-btn" data-i18n="tools.export_btn">Экспортировать</button>
+                        </div>
+                        <div class="import-section">
+                            <h3 data-i18n="tools.import_title">Импорт настроек</h3>
+                            <p class="muted" data-i18n="tools.import_desc">Загрузите файл с настройками роутеров</p>
+                            <input type="file" id="import-file" accept=".json" hidden>
+                            <button type="button" class="btn primary" id="import-btn" data-i18n="tools.import_btn">Выбрать файл</button>
+                            <div id="import-status" class="import-status" hidden></div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

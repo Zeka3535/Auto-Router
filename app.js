@@ -1657,6 +1657,340 @@
         }
     }
 
+    function initTraceroute() {
+        const tracerouteForm = document.getElementById('traceroute-form');
+        if (!tracerouteForm) return;
+
+        tracerouteForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const targetInput = document.getElementById('traceroute-target');
+            const startBtn = document.getElementById('traceroute-start');
+            const resultsDiv = document.getElementById('traceroute-results');
+            const pathDiv = document.getElementById('traceroute-path');
+
+            if (!targetInput || !startBtn || !resultsDiv || !pathDiv) return;
+
+            const target = targetInput.value.trim();
+            if (!target) {
+                showToast(getText('tools.traceroute_target', 'Укажите IP адрес или домен'), 'error');
+                return;
+            }
+
+            startBtn.disabled = true;
+            resultsDiv.hidden = false;
+            pathDiv.innerHTML = '';
+
+            const infoDiv = document.createElement('div');
+            infoDiv.className = 'traceroute-info';
+            infoDiv.innerHTML = `
+                <div class="traceroute-info-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="8" x2="12" y2="12"/>
+                        <line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                </div>
+                <p class="traceroute-info-text" data-i18n="tools.traceroute_browser_limitation">Трассировка маршрута в браузере невозможна из-за ограничений безопасности. Браузеры не имеют доступа к протоколу ICMP, который используется для трассировки.</p>
+                <div class="traceroute-alternatives">
+                    <h4 data-i18n="tools.traceroute_alternatives">Альтернативные способы:</h4>
+                    <ul>
+                        <li data-i18n="tools.traceroute_cmd">Используйте команду <code>traceroute</code> (Linux/Mac) или <code>tracert</code> (Windows) в терминале</li>
+                        <li data-i18n="tools.traceroute_online">Используйте онлайн-сервисы для трассировки, например: <a href="https://www.yougetsignal.com/tools/visual-tracert/" target="_blank" rel="noopener">YouGetSignal</a> или <a href="https://www.ultratools.com/tools/traceroute" target="_blank" rel="noopener">UltraTools</a></li>
+                    </ul>
+                </div>
+                <div class="traceroute-example">
+                    <h4 data-i18n="tools.traceroute_example">Пример команды:</h4>
+                    <code class="traceroute-code">traceroute ${target}</code>
+                    <button type="button" class="btn outline traceroute-copy-btn" data-i18n="action.copy">Скопировать</button>
+                </div>
+            `;
+            pathDiv.appendChild(infoDiv);
+
+            const copyBtn = infoDiv.querySelector('.traceroute-copy-btn');
+            if (copyBtn) {
+                copyBtn.addEventListener('click', async () => {
+                    const code = infoDiv.querySelector('.traceroute-code').textContent;
+                    const success = await copy(code);
+                    if (success) {
+                        showToast(getText('toast.copied', 'Скопировано'));
+                    }
+                });
+            }
+
+            window.__I18N__?.apply?.();
+            startBtn.disabled = false;
+        });
+    }
+
+    function initSubnetCalculator() {
+        const subnetForm = document.getElementById('subnet-form');
+        if (!subnetForm) return;
+
+        subnetForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const ipInput = document.getElementById('subnet-ip');
+            const maskInput = document.getElementById('subnet-mask');
+            const resultsDiv = document.getElementById('subnet-results');
+            const infoDiv = document.getElementById('subnet-info');
+
+            if (!ipInput || !maskInput || !resultsDiv || !infoDiv) return;
+
+            const ip = ipInput.value.trim();
+            let mask = maskInput.value.trim();
+
+            if (!ip || !mask) {
+                showToast(getText('tools.subnet_ip', 'Укажите IP и маску'), 'error');
+                return;
+            }
+
+            try {
+                const result = calculateSubnet(ip, mask);
+                resultsDiv.hidden = false;
+                infoDiv.innerHTML = `
+                    <div class="subnet-info-item">
+                        <span class="subnet-info-label">${getText('tools.subnet_network', 'Сеть')}</span>
+                        <span class="subnet-info-value">${result.network}</span>
+                    </div>
+                    <div class="subnet-info-item">
+                        <span class="subnet-info-label">${getText('tools.subnet_broadcast', 'Broadcast')}</span>
+                        <span class="subnet-info-value">${result.broadcast}</span>
+                    </div>
+                    <div class="subnet-info-item">
+                        <span class="subnet-info-label">${getText('tools.subnet_hosts', 'Доступно хостов')}</span>
+                        <span class="subnet-info-value">${result.hosts}</span>
+                    </div>
+                    <div class="subnet-info-item">
+                        <span class="subnet-info-label">${getText('tools.subnet_range', 'Диапазон')}</span>
+                        <span class="subnet-info-value">${result.range}</span>
+                    </div>
+                `;
+            } catch (error) {
+                showToast('Ошибка при расчёте подсети', 'error');
+            }
+        });
+    }
+
+    function calculateSubnet(ip, mask) {
+        let cidr = 24;
+        
+        if (mask.startsWith('/')) {
+            cidr = parseInt(mask.substring(1));
+        } else {
+            const maskParts = mask.split('.').map(Number);
+            let bits = 0;
+            for (const part of maskParts) {
+                bits += part.toString(2).split('1').length - 1;
+            }
+            cidr = bits;
+        }
+
+        const ipParts = ip.split('.').map(Number);
+        const hostBits = 32 - cidr;
+        const hosts = Math.pow(2, hostBits) - 2;
+        
+        const networkParts = [...ipParts];
+        const broadcastParts = [...ipParts];
+        
+        for (let i = 0; i < hostBits; i++) {
+            const byteIndex = 3 - Math.floor(i / 8);
+            const bitIndex = i % 8;
+            networkParts[byteIndex] &= ~(1 << (7 - bitIndex));
+            broadcastParts[byteIndex] |= (1 << (7 - bitIndex));
+        }
+
+        const network = networkParts.join('.');
+        const broadcast = broadcastParts.join('.');
+        const firstHost = networkParts.map((p, i) => i === 3 ? p + 1 : p).join('.');
+        const lastHost = broadcastParts.map((p, i) => i === 3 ? p - 1 : p).join('.');
+        const range = `${firstHost} - ${lastHost}`;
+
+        return { network, broadcast, hosts, range };
+    }
+
+    function initConnectionCheck() {
+        const checkBtn = document.getElementById('connection-check-btn');
+        if (!checkBtn) return;
+
+        checkBtn.addEventListener('click', async () => {
+            const resultsDiv = document.getElementById('connection-results');
+            const infoDiv = document.getElementById('connection-info');
+
+            if (!resultsDiv || !infoDiv) return;
+
+            checkBtn.disabled = true;
+            resultsDiv.hidden = false;
+            infoDiv.innerHTML = '<p class="muted">Проверка...</p>';
+
+            try {
+                const online = navigator.onLine;
+                let externalIP = 'Не определён';
+                let location = 'Не определён';
+
+                if (online) {
+                    try {
+                        const ipResponse = await fetch('https://api.ipify.org?format=json', { signal: AbortSignal.timeout(5000) });
+                        const ipData = await ipResponse.json();
+                        externalIP = ipData.ip || 'Не определён';
+                    } catch (e) {}
+
+                    try {
+                        const locResponse = await fetch(`https://ipapi.co/${externalIP}/json/`, { signal: AbortSignal.timeout(5000) });
+                        const locData = await locResponse.json();
+                        if (locData.city && locData.country_name) {
+                            location = `${locData.city}, ${locData.country_name}`;
+                        }
+                    } catch (e) {}
+                }
+
+                const statusClass = online ? 'online' : 'offline';
+                const statusText = online ? getText('tools.connection_online', 'Онлайн') : getText('tools.connection_offline', 'Офлайн');
+
+                infoDiv.innerHTML = `
+                    <div class="connection-info-item">
+                        <span class="subnet-info-label">${getText('tools.connection_status', 'Статус')}</span>
+                        <span class="connection-status ${statusClass}">
+                            <span class="connection-status-dot"></span>
+                            ${statusText}
+                        </span>
+                    </div>
+                    <div class="connection-info-item">
+                        <span class="subnet-info-label">${getText('tools.connection_ip', 'Внешний IP')}</span>
+                        <span class="subnet-info-value">${externalIP}</span>
+                    </div>
+                    <div class="connection-info-item">
+                        <span class="subnet-info-label">${getText('tools.connection_location', 'Местоположение')}</span>
+                        <span class="subnet-info-value">${location}</span>
+                    </div>
+                `;
+            } catch (error) {
+                infoDiv.innerHTML = '<p class="muted">Ошибка при проверке подключения</p>';
+            }
+
+            checkBtn.disabled = false;
+        });
+    }
+
+    function initExportImport() {
+        const exportBtn = document.getElementById('export-btn');
+        const importBtn = document.getElementById('import-btn');
+        const importFile = document.getElementById('import-file');
+        const importStatus = document.getElementById('import-status');
+
+        if (exportBtn) {
+            exportBtn.addEventListener('click', () => {
+                try {
+                    const routers = readMine();
+                    const dataStr = JSON.stringify(routers, null, 2);
+                    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                    const url = URL.createObjectURL(dataBlob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `router-backup-${new Date().toISOString().split('T')[0]}.json`;
+                    link.click();
+                    URL.revokeObjectURL(url);
+                } catch (error) {
+                    showToast('Ошибка при экспорте', 'error');
+                }
+            });
+        }
+
+        if (importBtn && importFile) {
+            importBtn.addEventListener('click', () => {
+                importFile.click();
+            });
+
+            importFile.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                try {
+                    const text = await file.text();
+                    const routers = JSON.parse(text);
+                    
+                    if (!Array.isArray(routers)) {
+                        throw new Error('Invalid format');
+                    }
+
+                    const existing = readMine();
+                    const merged = [...existing, ...routers];
+                    writeMine(merged);
+
+                    if (importStatus) {
+                        importStatus.hidden = false;
+                        importStatus.className = 'import-status success';
+                        importStatus.textContent = getText('tools.import_success', 'Настройки успешно импортированы');
+                    }
+
+                    showToast(getText('tools.import_success', 'Настройки успешно импортированы'), 'success');
+                    
+                    if (typeof renderMine === 'function') {
+                        renderMine();
+                    }
+                } catch (error) {
+                    if (importStatus) {
+                        importStatus.hidden = false;
+                        importStatus.className = 'import-status error';
+                        importStatus.textContent = getText('tools.import_error', 'Ошибка при импорте настроек');
+                    }
+                    showToast(getText('tools.import_error', 'Ошибка при импорте настроек'), 'error');
+                }
+
+                importFile.value = '';
+            });
+        }
+    }
+
+    function initSpeedtest() {
+        const speedtestIframe = document.getElementById('speedtest-iframe');
+        const speedtestError = document.getElementById('speedtest-iframe-error');
+        
+        if (!speedtestIframe || !speedtestError) return;
+
+        let errorTimeout = null;
+        
+        const showError = () => {
+            if (errorTimeout) {
+                clearTimeout(errorTimeout);
+            }
+            errorTimeout = setTimeout(() => {
+                speedtestIframe.style.display = 'none';
+                speedtestError.classList.add('show');
+            }, 3000);
+        };
+
+        const hideError = () => {
+            if (errorTimeout) {
+                clearTimeout(errorTimeout);
+                errorTimeout = null;
+            }
+            speedtestIframe.style.display = 'block';
+            speedtestError.classList.remove('show');
+        };
+
+        speedtestIframe.addEventListener('load', () => {
+            hideError();
+        });
+
+        speedtestIframe.addEventListener('error', () => {
+            showError();
+        });
+
+        const checkIframeLoad = () => {
+            try {
+                const iframeDoc = speedtestIframe.contentDocument || speedtestIframe.contentWindow.document;
+                if (iframeDoc && iframeDoc.body) {
+                    hideError();
+                } else {
+                    showError();
+                }
+            } catch (e) {
+                showError();
+            }
+        };
+
+        setTimeout(checkIframeLoad, 2000);
+    }
+
     function initTools() {
         const toolsDialog = document.getElementById('tools-dialog');
         const toolsToggle = document.getElementById('tools-toggle');
@@ -1715,6 +2049,11 @@
         initMine();
         initPingAdvanced();
         initScanner();
+        initTraceroute();
+        initSubnetCalculator();
+        initConnectionCheck();
+        initSpeedtest();
+        initExportImport();
     }
 
     async function init() {
