@@ -77,10 +77,54 @@
     let credFieldIdCounter = 0;
     const CUSTOM_GROUP_PREFIX = 'custom:';
 
+    // Toast-уведомления
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.setAttribute('role', 'alert');
+
+        const icon = document.createElement('svg');
+        icon.className = 'toast-icon';
+        icon.setAttribute('viewBox', '0 0 24 24');
+        icon.setAttribute('aria-hidden', 'true');
+        if (type === 'success') {
+            icon.innerHTML = '<path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/>';
+        } else {
+            icon.innerHTML = '<path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="currentColor"/>';
+        }
+
+        const messageEl = document.createElement('div');
+        messageEl.className = 'toast-message';
+        messageEl.textContent = message;
+
+        toast.append(icon, messageEl);
+        container.append(toast);
+
+        setTimeout(() => {
+            toast.classList.add('fade-out');
+            setTimeout(() => toast.remove(), 200);
+        }, 3000);
+    }
+
     async function copyCombo(pair) {
         if (!pair) return;
-        await copy(pair.password || '');
-        setTimeout(() => { copy(pair.login || ''); }, 250);
+        try {
+            await copy(pair.password || '');
+            showToast(getText('toast.copied_password', 'Пароль скопирован'));
+            setTimeout(async () => {
+                const success = await copy(pair.login || '');
+                if (success) {
+                    showToast(getText('toast.copied_login', 'Логин скопирован'));
+                } else {
+                    showToast(getText('toast.error', 'Ошибка при копировании'), 'error');
+                }
+            }, 250);
+        } catch {
+            showToast(getText('toast.error', 'Ошибка при копировании'), 'error');
+        }
     }
 
     function createCopyIconButton(onClick) {
@@ -253,6 +297,9 @@
     function createRouterCard(model, fallback) {
         const card = document.createElement('article');
         card.className = 'router-card';
+        card.setAttribute('role', 'button');
+        card.setAttribute('tabindex', '0');
+        card.setAttribute('aria-label', `${model.brand || ''} ${model.model || ''}`.trim() || 'Роутер');
         const header = document.createElement('div');
         header.className = 'router-header';
 
@@ -289,7 +336,53 @@
         const cardId = `card-${cardIdCounter++}`;
         card.dataset.cardId = cardId;
         CARD_REGISTRY.set(cardId, { model, defaults });
-        card.addEventListener('click', () => selectCard(cardId));
+        
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchMoved = false;
+        let touchStartTime = 0;
+        
+        card.addEventListener('touchstart', (e) => {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+            touchStartTime = Date.now();
+            touchMoved = false;
+        }, { passive: true });
+        
+        card.addEventListener('touchmove', (e) => {
+            if (!touchStartX || !touchStartY) return;
+            const touchCurrentX = e.touches[0].clientX;
+            const touchCurrentY = e.touches[0].clientY;
+            const deltaX = Math.abs(touchCurrentX - touchStartX);
+            const deltaY = Math.abs(touchCurrentY - touchStartY);
+            if (deltaX > 10 || deltaY > 10) {
+                touchMoved = true;
+            }
+        }, { passive: true });
+        
+        card.addEventListener('touchend', (e) => {
+            const touchDuration = Date.now() - touchStartTime;
+            if (!touchMoved && touchDuration < 300) {
+                e.preventDefault();
+                selectCard(cardId);
+            }
+            touchStartX = 0;
+            touchStartY = 0;
+            touchMoved = false;
+            touchStartTime = 0;
+        }, { passive: false });
+        
+        card.addEventListener('click', (e) => {
+            if (!touchMoved) {
+                selectCard(cardId);
+            }
+        });
+        card.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                selectCard(cardId);
+            }
+        });
         return card;
     }
 
@@ -490,6 +583,42 @@
         return filtered;
     }
 
+    // Диалог подтверждения
+    function showConfirmDialog(message, onConfirm) {
+        const dialog = document.getElementById('confirm-dialog');
+        const messageEl = document.getElementById('confirm-dialog-message');
+        const cancelBtn = document.getElementById('confirm-dialog-cancel');
+        const okBtn = document.getElementById('confirm-dialog-ok');
+        
+        if (!dialog || !messageEl || !cancelBtn || !okBtn) return;
+
+        messageEl.textContent = message;
+        dialog.hidden = false;
+        dialog.focus();
+
+        const cleanup = () => {
+            dialog.hidden = true;
+            cancelBtn.onclick = null;
+            okBtn.onclick = null;
+        };
+
+        cancelBtn.onclick = () => cleanup();
+        okBtn.onclick = () => {
+            cleanup();
+            onConfirm?.();
+        };
+
+        const handleEscape = (e) => {
+            if (e.key === 'Escape') {
+                cleanup();
+                document.removeEventListener('keydown', handleEscape);
+            }
+        };
+        document.addEventListener('keydown', handleEscape);
+    }
+
+    let editingItemId = null;
+
     function renderMine() {
         const list = document.getElementById('mine-list');
         if (!list) return;
@@ -530,21 +659,105 @@
             const row = document.createElement('div');
             row.className = 'cred-row';
 
-            const delBtn = document.createElement('button');
-            delBtn.className = 'btn';
-            delBtn.setAttribute('data-i18n', 'action.delete');
-            delBtn.textContent = 'Удалить';
-            delBtn.addEventListener('click', () => {
-                removeMine(item.id);
-                renderMine();
-                refreshRouterCards();
+            const editBtn = document.createElement('button');
+            editBtn.className = 'btn edit-btn';
+            editBtn.type = 'button';
+            editBtn.setAttribute('data-i18n', 'action.edit');
+            editBtn.setAttribute('aria-label', `${getText('action.edit', 'Редактировать')} ${item.brand || ''} ${item.model || ''}`.trim());
+            editBtn.textContent = 'Редактировать';
+            editBtn.addEventListener('click', () => {
+                editingItemId = item.id;
+                fillMineForm(item);
             });
 
-            row.append(delBtn);
+            const delBtn = document.createElement('button');
+            delBtn.className = 'btn';
+            delBtn.type = 'button';
+            delBtn.setAttribute('data-i18n', 'action.delete');
+            delBtn.setAttribute('aria-label', `${getText('action.delete', 'Удалить')} ${item.brand || ''} ${item.model || ''}`.trim());
+            delBtn.textContent = 'Удалить';
+            delBtn.addEventListener('click', () => {
+                showConfirmDialog(
+                    getText('confirm.delete', 'Вы уверены, что хотите удалить эту запись?'),
+                    () => {
+                        removeMine(item.id);
+                        renderMine();
+                        refreshRouterCards();
+                    }
+                );
+            });
+
+            row.append(editBtn, delBtn);
             block.append(row);
             list.append(block);
         });
         window.__I18N__?.apply?.();
+    }
+
+    function fillMineForm(item) {
+        const brandInput = document.getElementById('mine-brand');
+        const modelInput = document.getElementById('mine-model');
+        const ipInput = document.getElementById('mine-ip');
+        const groupInput = document.getElementById('mine-group');
+        const customGroupInput = document.getElementById('mine-group-custom');
+        const credList = document.getElementById('mine-creds');
+
+        if (brandInput) brandInput.value = item.brand || '';
+        if (modelInput) modelInput.value = item.model || '';
+        if (ipInput) ipInput.value = item.ip || '';
+
+        const group = item.group || 'auto';
+        if (groupInput) {
+            if (group.startsWith(CUSTOM_GROUP_PREFIX)) {
+                groupInput.value = 'custom';
+                if (customGroupInput) customGroupInput.value = item.groupLabel || '';
+            } else {
+                groupInput.value = group;
+            }
+        }
+
+        if (credList) {
+            credList.innerHTML = '';
+            if (Array.isArray(item.defaults) && item.defaults.length) {
+                item.defaults.forEach(pair => {
+                    credList.append(createCredFieldRow(pair));
+                });
+            } else {
+                credList.append(createCredFieldRow());
+            }
+        }
+
+        const groupPicker = document.querySelector('[data-group-picker]');
+        if (groupPicker) {
+            const updateGroupFieldVisibility = () => {
+                const customGroupWrap = document.getElementById('mine-group-custom-wrap');
+                if (!customGroupWrap) return;
+                const isCustom = groupInput?.value === 'custom';
+                if (isCustom) {
+                    customGroupWrap.removeAttribute('hidden');
+                } else {
+                    customGroupWrap.setAttribute('hidden', 'true');
+                }
+            };
+            updateGroupFieldVisibility();
+        }
+
+        const submitBtn = document.getElementById('mine-submit');
+        const cancelBtn = document.getElementById('mine-cancel-edit');
+        if (submitBtn) {
+            submitBtn.setAttribute('data-i18n', 'action.save_changes');
+            submitBtn.textContent = getText('action.save_changes', 'Изменить');
+        }
+        if (cancelBtn) {
+            cancelBtn.hidden = false;
+        }
+
+    }
+
+    function isValidIP(ip) {
+        if (!ip || !ip.trim()) return true;
+        const ipRegex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+        return ipRegex.test(ip.trim());
     }
 
     function collectMineFormData() {
@@ -562,6 +775,10 @@
         }
         if (!defaults.length) {
             alert(getText('mine.validation_creds', 'Добавьте хотя бы одну пару логин/пароль.'));
+            return null;
+        }
+        if (ip && !isValidIP(ip)) {
+            alert(getText('mine.validation_ip', 'Введите корректный IP-адрес (например, 192.168.1.1).'));
             return null;
         }
         if (group === 'custom') {
@@ -789,6 +1006,24 @@
         syncGroupLabel();
         updateGroupFieldVisibility();
 
+        const ipInput = document.getElementById('mine-ip');
+        if (ipInput) {
+            ipInput.addEventListener('blur', () => {
+                const ip = ipInput.value.trim();
+                if (ip && !isValidIP(ip)) {
+                    ipInput.setAttribute('aria-invalid', 'true');
+                    ipInput.style.borderColor = '#ef4444';
+                } else {
+                    ipInput.removeAttribute('aria-invalid');
+                    ipInput.style.borderColor = '';
+                }
+            });
+            ipInput.addEventListener('input', () => {
+                ipInput.removeAttribute('aria-invalid');
+                ipInput.style.borderColor = '';
+            });
+        }
+
         addCredBtn?.addEventListener('click', () => {
             credList?.append(createCredFieldRow());
         });
@@ -797,23 +1032,65 @@
             e.preventDefault();
             const entry = collectMineFormData();
             if (!entry) return;
-            addMine(entry);
+            
+            if (editingItemId) {
+                const items = readMine();
+                const index = items.findIndex(item => item.id === editingItemId);
+                if (index !== -1) {
+                    const normalized = normalizeMineEntry({ ...entry, id: editingItemId });
+                    if (normalized) {
+                        items[index] = normalized;
+                        writeMine(items);
+                    }
+                }
+                editingItemId = null;
+            } else {
+                addMine(entry);
+            }
+            
             form.reset();
+            editingItemId = null;
             closeGroupMenu();
             setGroupValue(groupInput?.value || 'auto');
             updateGroupFieldVisibility();
             resetCredFields(credList);
+            updateEditMode(false);
             renderMine();
             refreshRouterCards();
         });
 
         clearBtn?.addEventListener('click', () => {
             form?.reset();
+            editingItemId = null;
             closeGroupMenu();
             setGroupValue(groupInput?.value || 'auto');
             updateGroupFieldVisibility();
             resetCredFields(credList);
+            updateEditMode(false);
         });
+
+        const cancelEditBtn = document.getElementById('mine-cancel-edit');
+        cancelEditBtn?.addEventListener('click', () => {
+            form?.reset();
+            editingItemId = null;
+            closeGroupMenu();
+            setGroupValue(groupInput?.value || 'auto');
+            updateGroupFieldVisibility();
+            resetCredFields(credList);
+            updateEditMode(false);
+        });
+
+        function updateEditMode(isEditing) {
+            const submitBtn = document.getElementById('mine-submit');
+            const cancelBtn = document.getElementById('mine-cancel-edit');
+            if (submitBtn) {
+                submitBtn.setAttribute('data-i18n', isEditing ? 'action.save_changes' : 'action.save');
+                submitBtn.textContent = getText(isEditing ? 'action.save_changes' : 'action.save', isEditing ? 'Изменить' : 'Сохранить');
+            }
+            if (cancelBtn) {
+                cancelBtn.hidden = !isEditing;
+            }
+        }
 
         renderMine();
     }

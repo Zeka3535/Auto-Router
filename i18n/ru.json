@@ -37,10 +37,25 @@
   "mine.validation_required": "Укажите бренд и модель.",
   "mine.validation_creds": "Добавьте хотя бы одну пару логин/пароль.",
   "mine.validation_group": "Введите название новой группы.",
+  "mine.validation_ip": "Введите корректный IP-адрес (например, 192.168.1.1).",
 
   "lang.switch": "Язык",
   "theme.light": "Светлая",
-  "theme.dark": "Тёмная"
+  "theme.dark": "Тёмная",
+
+  "toast.copied": "Скопировано",
+  "toast.copied_login": "Логин скопирован",
+  "toast.copied_password": "Пароль скопирован",
+  "toast.error": "Ошибка при копировании",
+  "search.placeholder": "Поиск по бренду или модели...",
+  "search.no_results": "Ничего не найдено",
+  "action.edit": "Редактировать",
+  "action.cancel": "Отмена",
+  "action.save_changes": "Изменить",
+  "confirm.title": "Подтверждение",
+  "confirm.delete": "Вы уверены, что хотите удалить эту запись?",
+  "confirm.cancel": "Отмена",
+  "confirm.ok": "Удалить"
 }
 
 

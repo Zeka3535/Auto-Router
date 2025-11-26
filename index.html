@@ -31,7 +31,7 @@
         </div>
 
         <div class="header-actions">
-            <button id="theme-toggle" class="theme-toggle" aria-label="Переключить тему">
+            <button id="theme-toggle" class="theme-toggle" aria-label="Переключить тему" type="button">
                 <svg class="theme-icon theme-sun" viewBox="0 0 384 512" aria-hidden="true">
                     <path d="M272 384c9.6-31.9 29.5-59.1 49.2-86.2l0 0c5.2-7.1 10.4-14.2 15.4-21.4c19.8-28.5 31.4-63 31.4-100.3C368 78.8 289.2 0 192 0S16 78.8 16 176c0 37.3 11.6 71.9 31.4 100.3c5 7.2 10.2 14.3 15.4 21.4l0 0c19.8 27.1 39.7 54.4 49.2 86.2H272zM192 512c44.2 0 80-35.8 80-80V416H112v16c0 44.2 35.8 80 80 80zM112 176c0 8.8-7.2 16-16 16s-16-7.2-16-16c0-61.9 50.1-112 112-112c8.8 0 16 7.2 16 16s-7.2 16-16 16c-44.2 0-80 35.8-80 80z"/>
                 </svg>
@@ -103,23 +103,23 @@
 
     <main class="container">
         <!-- Информация о выбранном модеме -->
-        <section class="card selected-card" id="selected-card">
+        <section class="card selected-card" id="selected-card" aria-labelledby="selected-title">
             <div class="selected-head">
                 <div>
-                    <div class="selected-label" data-i18n="selected.title">Выбранный модем</div>
-                    <div id="selected-name" class="selected-name">—</div>
+                    <div class="selected-label" id="selected-title" data-i18n="selected.title">Выбранный модем</div>
+                    <div id="selected-name" class="selected-name" aria-live="polite">—</div>
                 </div>
             </div>
             <div class="selected-meta">
                 <div>
                     <span data-i18n="selected.ip">Адрес:</span>
-                    <strong id="selected-ip">—</strong>
+                    <strong id="selected-ip" aria-live="polite">—</strong>
                 </div>
             </div>
-            <div id="selected-creds" class="cred-inline-list"></div>
-            <p id="selected-placeholder" class="muted" data-i18n="selected.placeholder">Выберите модем ниже, чтобы увидеть логины и пароли.</p>
+            <div id="selected-creds" class="cred-inline-list" role="list" aria-label="Учётные данные"></div>
+            <p id="selected-placeholder" class="muted" data-i18n="selected.placeholder" role="status">Выберите модем ниже, чтобы увидеть логины и пароли.</p>
             <div class="selected-actions">
-                <a id="selected-open" class="btn outline primary" href="#" target="_blank" rel="noopener" data-i18n="selected.open">Открыть настройки</a>
+                <a id="selected-open" class="btn outline primary" href="#" target="_blank" rel="noopener" data-i18n="selected.open" aria-label="Открыть настройки роутера в новой вкладке">Открыть настройки</a>
             </div>
         </section>
 
@@ -137,11 +137,11 @@
                 <div class="row gap">
                     <div class="field">
                         <label for="mine-brand" data-i18n="label.brand">Бренд</label>
-                        <input id="mine-brand" autocomplete="off" placeholder="Huawei">
+                        <input id="mine-brand" type="text" autocomplete="off" placeholder="Huawei" aria-required="true">
                     </div>
                     <div class="field">
                         <label for="mine-model" data-i18n="label.model">Модель</label>
-                        <input id="mine-model" autocomplete="off" placeholder="HG8245H">
+                        <input id="mine-model" type="text" autocomplete="off" placeholder="HG8245H" aria-required="true">
                     </div>
                 </div>
                 <div class="row gap">
@@ -175,7 +175,8 @@
                     </div>
                     <div class="field">
                         <label for="mine-ip" data-i18n="label.ip">IP адрес (необязательно)</label>
-                        <input id="mine-ip" inputmode="numeric" autocomplete="off" placeholder="192.168.1.1">
+                        <input id="mine-ip" type="text" inputmode="numeric" autocomplete="off" placeholder="192.168.1.1" aria-describedby="mine-ip-hint">
+                        <span id="mine-ip-hint" class="visually-hidden">Формат: XXX.XXX.XXX.XXX, например 192.168.1.1</span>
                     </div>
                 </div>
                 <div class="row gap" id="mine-group-custom-wrap" hidden>
@@ -190,13 +191,29 @@
                     <button type="button" id="mine-add-cred" class="btn ghost" data-i18n="action.add_cred">Добавить пару</button>
                 </div>
                 <div class="row form-actions">
-                    <button type="submit" class="btn primary" data-i18n="action.save">Сохранить</button>
+                    <button type="submit" class="btn primary" id="mine-submit" data-i18n="action.save">Сохранить</button>
+                    <button type="button" id="mine-cancel-edit" class="btn" data-i18n="action.cancel" hidden>Отмена</button>
                     <button type="button" id="mine-clear" class="btn" data-i18n="action.clear">Очистить</button>
                 </div>
             </form>
             <div id="mine-list" class="list"></div>
         </section>
     </main>
+
+    <!-- Toast контейнер -->
+    <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+    <!-- Диалог подтверждения -->
+    <div id="confirm-dialog" class="confirm-dialog" hidden role="dialog" aria-modal="true" aria-labelledby="confirm-dialog-title">
+        <div class="confirm-dialog-content">
+            <h3 id="confirm-dialog-title" class="confirm-dialog-title" data-i18n="confirm.title">Подтверждение</h3>
+            <p id="confirm-dialog-message" class="confirm-dialog-message"></p>
+            <div class="confirm-dialog-actions">
+                <button type="button" id="confirm-dialog-cancel" class="btn" data-i18n="confirm.cancel">Отмена</button>
+                <button type="button" id="confirm-dialog-ok" class="btn primary" data-i18n="confirm.ok">ОК</button>
+            </div>
+        </div>
+    </div>
 
     <script src="./i18n/i18n.js" defer></script>
     <script src="./app.js" defer></script>
