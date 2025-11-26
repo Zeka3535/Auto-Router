@@ -1,6 +1,6 @@
 // Service Worker для оффлайн работы.
 
-const CACHE_VERSION = 'v3';
+const CACHE_VERSION = 'v4';
 const CACHE_NAME = `router-cache-${CACHE_VERSION}`;
 
 // Список ресурсов для кэширования при установке
@@ -25,7 +25,10 @@ const CACHE_RESOURCES = [
     './assets/svg/huawei.svg',
     './assets/svg/zte.svg',
     './assets/svg/routericon.svg',
-    './assets/svg/routerlogo.svg'
+    './assets/svg/routerlogo.svg',
+    './assets/svg/YandexInt/Yanintlogo1.svg',
+    './assets/svg/YandexInt/Yanintlogo2.svg',
+    './assets/svg/YandexInt/Yanintlogo3.svg'
 ];
 
 // Установка Service Worker и кэширование ресурсов 

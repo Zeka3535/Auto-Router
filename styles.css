@@ -47,8 +47,8 @@ body {
   justify-content: space-between;
 }
 .brand { display: inline-flex; align-items: center; gap: 12px; }
-.logo { width: 32px; height: 32px; fill: var(--accent); filter: drop-shadow(0 0 8px rgba(77,163,255,0.4)); }
-.title { font-size: clamp(18px, 3.5vw, 20px); font-weight: 600; }
+.logo { width: 32px; height: 32px; fill: var(--accent); filter: drop-shadow(0 0 8px rgba(77,163,255,0.4)); flex-shrink: 0; }
+.title { font-size: clamp(18px, 3.5vw, 20px); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .header-actions { display: inline-flex; align-items: center; gap: 12px; }
 .lang-switcher { position: relative; }
 .lang-btn { display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 8px 12px; transition: none; }
@@ -650,6 +650,9 @@ body {
   height: 37px;
   width: auto;
   pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+  object-fit: contain;
 }
 
 .speedtest-logo-icon {
