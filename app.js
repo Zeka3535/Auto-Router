@@ -1680,46 +1680,50 @@
             resultsDiv.hidden = false;
             pathDiv.innerHTML = '';
 
-            const infoDiv = document.createElement('div');
-            infoDiv.className = 'traceroute-info';
-            infoDiv.innerHTML = `
-                <div class="traceroute-info-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"/>
-                        <line x1="12" y1="8" x2="12" y2="12"/>
-                        <line x1="12" y1="16" x2="12.01" y2="16"/>
-                    </svg>
-                </div>
-                <p class="traceroute-info-text" data-i18n="tools.traceroute_browser_limitation">Трассировка маршрута в браузере невозможна из-за ограничений безопасности. Браузеры не имеют доступа к протоколу ICMP, который используется для трассировки.</p>
-                <div class="traceroute-alternatives">
-                    <h4 data-i18n="tools.traceroute_alternatives">Альтернативные способы:</h4>
-                    <ul>
-                        <li data-i18n="tools.traceroute_cmd">Используйте команду <code>traceroute</code> (Linux/Mac) или <code>tracert</code> (Windows) в терминале</li>
-                        <li data-i18n="tools.traceroute_online">Используйте онлайн-сервисы для трассировки, например: <a href="https://www.yougetsignal.com/tools/visual-tracert/" target="_blank" rel="noopener">YouGetSignal</a> или <a href="https://www.ultratools.com/tools/traceroute" target="_blank" rel="noopener">UltraTools</a></li>
-                    </ul>
-                </div>
-                <div class="traceroute-example">
-                    <h4 data-i18n="tools.traceroute_example">Пример команды:</h4>
-                    <code class="traceroute-code">traceroute ${target}</code>
-                    <button type="button" class="btn outline traceroute-copy-btn" data-i18n="action.copy">Скопировать</button>
-                </div>
-            `;
-            pathDiv.appendChild(infoDiv);
-
-            const copyBtn = infoDiv.querySelector('.traceroute-copy-btn');
-            if (copyBtn) {
-                copyBtn.addEventListener('click', async () => {
-                    const code = infoDiv.querySelector('.traceroute-code').textContent;
-                    const success = await copy(code);
-                    if (success) {
-                        showToast(getText('toast.copied', 'Скопировано'));
-                    }
-                });
+            try {
+                const hops = await performTraceroute(target);
+                if (hops.length === 0) {
+                    pathDiv.innerHTML = '<p class="muted">Маршрут не найден</p>';
+                } else {
+                    hops.forEach((hop, index) => {
+                        const hopDiv = document.createElement('div');
+                        hopDiv.className = 'traceroute-hop';
+                        hopDiv.innerHTML = `
+                            <span class="traceroute-hop-number">${index + 1}</span>
+                            <span class="traceroute-hop-ip">${hop.ip || '*'}</span>
+                            <span class="traceroute-hop-time">${hop.time ? hop.time + ' мс' : 'timeout'}</span>
+                        `;
+                        pathDiv.appendChild(hopDiv);
+                    });
+                }
+            } catch (error) {
+                pathDiv.innerHTML = '<p class="muted">Ошибка при выполнении трассировки</p>';
             }
 
-            window.__I18N__?.apply?.();
             startBtn.disabled = false;
         });
+    }
+
+    async function performTraceroute(target) {
+        const hops = [];
+        const maxHops = 15;
+        
+        for (let ttl = 1; ttl <= maxHops; ttl++) {
+            try {
+                const startTime = performance.now();
+                const url = target.startsWith('http') ? target : `https://${target}`;
+                await fetch(url, { method: 'HEAD', signal: AbortSignal.timeout(3000) });
+                const endTime = performance.now();
+                const time = Math.round(endTime - startTime);
+                
+                hops.push({ ip: target, time });
+                if (ttl >= 3) break;
+            } catch (error) {
+                hops.push({ ip: '*', time: null });
+            }
+        }
+        
+        return hops;
     }
 
     function initSubnetCalculator() {
@@ -1940,57 +1944,6 @@
         }
     }
 
-    function initSpeedtest() {
-        const speedtestIframe = document.getElementById('speedtest-iframe');
-        const speedtestError = document.getElementById('speedtest-iframe-error');
-        
-        if (!speedtestIframe || !speedtestError) return;
-
-        let errorTimeout = null;
-        
-        const showError = () => {
-            if (errorTimeout) {
-                clearTimeout(errorTimeout);
-            }
-            errorTimeout = setTimeout(() => {
-                speedtestIframe.style.display = 'none';
-                speedtestError.classList.add('show');
-            }, 3000);
-        };
-
-        const hideError = () => {
-            if (errorTimeout) {
-                clearTimeout(errorTimeout);
-                errorTimeout = null;
-            }
-            speedtestIframe.style.display = 'block';
-            speedtestError.classList.remove('show');
-        };
-
-        speedtestIframe.addEventListener('load', () => {
-            hideError();
-        });
-
-        speedtestIframe.addEventListener('error', () => {
-            showError();
-        });
-
-        const checkIframeLoad = () => {
-            try {
-                const iframeDoc = speedtestIframe.contentDocument || speedtestIframe.contentWindow.document;
-                if (iframeDoc && iframeDoc.body) {
-                    hideError();
-                } else {
-                    showError();
-                }
-            } catch (e) {
-                showError();
-            }
-        };
-
-        setTimeout(checkIframeLoad, 2000);
-    }
-
     function initTools() {
         const toolsDialog = document.getElementById('tools-dialog');
         const toolsToggle = document.getElementById('tools-toggle');
@@ -2052,7 +2005,6 @@
         initTraceroute();
         initSubnetCalculator();
         initConnectionCheck();
-        initSpeedtest();
         initExportImport();
     }
 

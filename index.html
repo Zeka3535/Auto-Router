@@ -333,27 +333,13 @@
                 <!-- Секция интернетометра -->
                 <div class="tools-tab-content" data-content="speedtest" role="tabpanel">
                     <div class="speedtest-section">
-                        <div class="speedtest-header">
-                            <p class="muted" data-i18n="tools.speedtest_desc">Проверьте скорость вашего интернет-соединения с помощью Яндекс Интернетометра.</p>
-                            <a href="https://yandex.by/internet" class="btn outline" target="_blank" rel="noopener" data-i18n="tools.speedtest_open_new">Открыть в новой вкладке</a>
-                        </div>
-                        <div class="speedtest-iframe-container">
-                            <iframe 
-                                id="speedtest-iframe" 
-                                src="https://yandex.by/internet" 
-                                title="Яндекс Интернетометр"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                allowfullscreen
-                                loading="lazy">
-                            </iframe>
-                            <div id="speedtest-iframe-error" class="speedtest-iframe-error">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <circle cx="12" cy="12" r="10"/>
-                                    <line x1="12" y1="8" x2="12" y2="12"/>
-                                    <line x1="12" y1="16" x2="12.01" y2="16"/>
-                                </svg>
-                                <p data-i18n="tools.speedtest_iframe_error">Не удалось загрузить страницу. Используйте кнопку выше, чтобы открыть в новой вкладке.</p>
-                            </div>
+                        <p class="muted" data-i18n="tools.speedtest_desc">Проверьте скорость вашего интернет-соединения с помощью Яндекс Интернетометра.</p>
+                        <div class="speedtest-logo-container">
+                            <a href="https://yandex.by/internet" class="speedtest-logo-link speedtest-button" target="_blank" rel="noopener" aria-label="Яндекс Интернетометр">
+                                <img src="./assets/svg/YandexInt/Yanintlogo1.svg" class="speedtest-logo-image speedtest-logo-text" alt="Интернетометр" draggable="false">
+                                <img src="./assets/svg/YandexInt/Yanintlogo2.svg" class="speedtest-logo-image speedtest-logo-icon" alt="Интернетометр" draggable="false">
+                                <img src="./assets/svg/YandexInt/Yanintlogo3.svg" class="speedtest-logo-image" alt="Яндекс" draggable="false">
+                            </a>
                         </div>
                     </div>
                 </div>
