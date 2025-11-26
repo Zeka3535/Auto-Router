@@ -1,6 +1,6 @@
 // Service Worker для оффлайн работы.
 
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const CACHE_NAME = `router-cache-${CACHE_VERSION}`;
 
 // Список ресурсов для кэширования при установке
