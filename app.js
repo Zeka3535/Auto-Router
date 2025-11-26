@@ -818,8 +818,33 @@
         renderMine();
     }
 
+    // Регистрация Service Worker для оффлайн работы
+    function registerServiceWorker() {
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js')
+                .then((registration) => {
+                    // Проверка обновлений Service Worker
+                    registration.addEventListener('updatefound', () => {
+                        const newWorker = registration.installing;
+                        if (newWorker) {
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    // Новый Service Worker установлен, можно обновить страницу
+                                    console.log('Доступна новая версия приложения');
+                                }
+                            });
+                        }
+                    });
+                })
+                .catch((error) => {
+                    console.warn('Ошибка регистрации Service Worker:', error);
+                });
+        }
+    }
+
     async function init() {
         initTheme();
+        registerServiceWorker();
         const db = await loadRouterDb();
         initDefaults(db);
         initMine();
