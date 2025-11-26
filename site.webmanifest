@@ -11,7 +11,7 @@
   "display_override": ["standalone", "browser"],
   "orientation": "portrait",
   "background_color": "#05070c",
-  "theme_color": "#1a6dff",
+  "theme_color": "#05070c",
   "categories": ["utilities", "productivity"],
   "icons": [
     {
