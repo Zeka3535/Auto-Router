@@ -1,6 +1,6 @@
 // Service Worker для оффлайн работы.
 
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const CACHE_NAME = `router-cache-${CACHE_VERSION}`;
 
 // Список ресурсов для кэширования при установке
@@ -28,7 +28,7 @@ const CACHE_RESOURCES = [
     './assets/svg/routerlogo.svg'
 ];
 
-// Установка Service Worker и кэширование ресурсов
+// Установка Service Worker и кэширование ресурсов 
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME)

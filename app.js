@@ -424,7 +424,8 @@
         const openBtn = document.getElementById('selected-open');
         const credsWrap = document.getElementById('selected-creds');
         const placeholder = document.getElementById('selected-placeholder');
-        if (!nameEl || !ipEl || !openBtn || !credsWrap || !placeholder) return;
+        const pingStatus = document.getElementById('ping-status');
+        if (!nameEl || !ipEl || !openBtn || !credsWrap || !placeholder || !pingStatus) return;
 
         if (!model) {
             nameEl.textContent = '—';
@@ -433,6 +434,7 @@
             openBtn.setAttribute('aria-disabled', 'true');
             credsWrap.innerHTML = '';
             placeholder.hidden = false;
+            pingStatus.hidden = true;
             return;
         }
 
@@ -444,9 +446,12 @@
         if (ip) {
             openBtn.href = ip;
             openBtn.removeAttribute('aria-disabled');
+            pingStatus.hidden = false;
+            resetPingStatus();
         } else {
             openBtn.href = '#';
             openBtn.setAttribute('aria-disabled', 'true');
+            pingStatus.hidden = true;
         }
 
         renderSelectedCreds(credsWrap, defaults);
@@ -457,6 +462,539 @@
         if (model?.ip) return model.ip;
         const group = resolveGroup(model);
         return BRAND_IP[group] || '';
+    }
+
+    // Функция пинга роутера через HTTP
+    let pingTimeout = null;
+    let currentPingUrl = null;
+    let currentPingImage = null;
+
+    function resetPingStatus() {
+        const pingBtn = document.getElementById('ping-btn');
+        const pingText = document.getElementById('ping-text');
+        if (!pingBtn || !pingText) return;
+        
+        pingBtn.classList.remove('pinging', 'success', 'error');
+        pingText.textContent = getText('ping.check', 'Проверить');
+        pingBtn.disabled = false;
+        currentPingUrl = null;
+        
+        if (pingTimeout) {
+            clearTimeout(pingTimeout);
+            pingTimeout = null;
+        }
+        
+        if (currentPingImage) {
+            currentPingImage.onload = null;
+            currentPingImage.onerror = null;
+            currentPingImage.src = '';
+            currentPingImage = null;
+        }
+    }
+
+    async function pingRouter(url) {
+        if (!url) return null;
+        
+        const pingBtn = document.getElementById('ping-btn');
+        const pingText = document.getElementById('ping-text');
+        if (!pingBtn || !pingText) return null;
+
+        pingBtn.disabled = true;
+        pingBtn.classList.add('pinging');
+        pingBtn.classList.remove('success', 'error');
+        pingText.textContent = getText('ping.checking', 'Проверка...');
+        currentPingUrl = url;
+
+        const startTime = performance.now();
+        const timeout = 5000;
+
+        try {
+            const urlObj = new URL(url);
+            const isLocalIP = /^192\.168\.|^10\.|^172\.(1[6-9]|2[0-9]|3[01])\.|^127\./.test(urlObj.hostname);
+            
+            let latency = null;
+            latency = await pingLocalIP(url, startTime, timeout);
+
+            if (currentPingUrl !== url) return null;
+
+            if (latency !== null && latency >= 0) {
+                pingBtn.classList.remove('pinging');
+                pingBtn.classList.add('success');
+                const successText = getText('ping.success', `${latency} мс`).replace(/\{latency\}/g, latency);
+                pingText.textContent = successText;
+                pingBtn.disabled = false;
+
+                setTimeout(() => {
+                    if (currentPingUrl === url) {
+                        resetPingStatus();
+                    }
+                }, 3000);
+
+                return latency;
+            } else {
+                throw new Error('Ping failed');
+            }
+        } catch (error) {
+            if (currentPingUrl !== url) return null;
+
+            const endTime = performance.now();
+            const latency = Math.round(endTime - startTime);
+
+            pingBtn.classList.remove('pinging');
+            pingBtn.classList.add('error');
+            pingText.textContent = getText('ping.error', 'Недоступен');
+            pingBtn.disabled = false;
+
+            setTimeout(() => {
+                if (currentPingUrl === url) {
+                    resetPingStatus();
+                }
+            }, 3000);
+
+            return null;
+        }
+    }
+
+    async function pingLocalIP(url, startTime, timeout) {
+        return new Promise((resolve) => {
+            const urlObj = new URL(url);
+            const isLocalIP = /^192\.168\.|^10\.|^172\.(1[6-9]|2[0-9]|3[01])\.|^127\./.test(urlObj.hostname);
+            
+            let pingUrl;
+            if (isLocalIP) {
+                pingUrl = `${urlObj.protocol}//${urlObj.hostname}/favicon.ico?t=${Date.now()}`;
+            } else {
+                pingUrl = `${urlObj.protocol}//${urlObj.hostname}/favicon.ico?t=${Date.now()}`;
+            }
+            
+            const img = new Image();
+            currentPingImage = img;
+            let resolved = false;
+
+            const cleanup = () => {
+                if (resolved) return;
+                resolved = true;
+                img.onload = null;
+                img.onerror = null;
+                if (pingTimeout) {
+                    clearTimeout(pingTimeout);
+                    pingTimeout = null;
+                }
+                if (currentPingImage === img) {
+                    currentPingImage = null;
+                }
+            };
+
+            img.onload = () => {
+                cleanup();
+                const endTime = performance.now();
+                const latency = Math.round(endTime - startTime);
+                resolve(latency);
+            };
+
+            img.onerror = () => {
+                cleanup();
+                const endTime = performance.now();
+                const latency = Math.round(endTime - startTime);
+                if (latency < timeout) {
+                    resolve(latency);
+                } else {
+                    resolve(null);
+                }
+            };
+
+            pingTimeout = setTimeout(() => {
+                cleanup();
+                resolve(null);
+            }, timeout);
+
+            img.src = pingUrl;
+        });
+    }
+
+    async function pingRemoteIP(url, startTime, timeout) {
+        try {
+            const controller = new AbortController();
+            pingTimeout = setTimeout(() => controller.abort(), timeout);
+
+            const response = await fetch(url, {
+                method: 'HEAD',
+                signal: controller.signal,
+                cache: 'no-store',
+                credentials: 'omit'
+            });
+
+            clearTimeout(pingTimeout);
+            pingTimeout = null;
+
+            const endTime = performance.now();
+            const latency = Math.round(endTime - startTime);
+            return latency;
+        } catch (error) {
+            if (pingTimeout) {
+                clearTimeout(pingTimeout);
+                pingTimeout = null;
+            }
+            return null;
+        }
+    }
+
+    function initPing() {
+        const pingBtn = document.getElementById('ping-btn');
+        if (!pingBtn) return;
+
+        pingBtn.addEventListener('click', async () => {
+            const ipEl = document.getElementById('selected-ip');
+            if (!ipEl) return;
+
+            const ipText = ipEl.textContent.trim();
+            if (!ipText || ipText === '—') return;
+
+            const isLocalIP = /^192\.168\.|^10\.|^172\.(1[6-9]|2[0-9]|3[01])\.|^127\./.test(ipText);
+            let url = ipText;
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                url = isLocalIP ? `http://${url}` : `https://${url}`;
+            } else if (!isLocalIP && url.startsWith('http://')) {
+                url = url.replace(/^http:\/\//, 'https://');
+            }
+
+            await pingRouter(url);
+        });
+    }
+
+    function initPingAdvanced() {
+        const pingForm = document.getElementById('ping-form');
+        if (!pingForm) return;
+
+        pingForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const targetInput = document.getElementById('ping-target');
+            const packetsInput = document.getElementById('ping-packets');
+            const startBtn = document.getElementById('ping-start');
+            const resultsDiv = document.getElementById('ping-results');
+            const progressDiv = document.getElementById('ping-progress');
+            const statsDiv = document.getElementById('ping-stats');
+
+            if (!targetInput || !packetsInput || !startBtn || !resultsDiv || !progressDiv) return;
+
+            const target = targetInput.value.trim();
+            const packets = Math.max(1, Math.min(100, parseInt(packetsInput.value) || 10));
+
+            if (!target) {
+                showToast(getText('tools.ping_target', 'Укажите IP адрес или домен'), 'error');
+                return;
+            }
+
+            startBtn.disabled = true;
+            resultsDiv.hidden = false;
+            progressDiv.innerHTML = '';
+            statsDiv.hidden = true;
+
+            let url = target;
+            const isLocalIP = /^192\.168\.|^10\.|^172\.(1[6-9]|2[0-9]|3[01])\.|^127\./.test(target);
+            
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                url = isLocalIP ? `http://${url}` : `https://${url}`;
+            } else if (!isLocalIP && url.startsWith('http://')) {
+                url = url.replace(/^http:\/\//, 'https://');
+            }
+
+            const results = [];
+            
+            for (let i = 0; i < packets; i++) {
+                const progressItem = document.createElement('div');
+                progressItem.className = 'ping-progress-item pending';
+                const packetLabel = getText('tools.ping_packet', `Пакет ${i + 1}/${packets}`).replace('{num}', i + 1).replace('{total}', packets);
+                const waitingText = getText('ping.checking', 'Ожидание...');
+                progressItem.innerHTML = `<span class="ping-packet-label">${packetLabel}</span> <span class="ping-status-text">${waitingText}</span>`;
+                progressDiv.appendChild(progressItem);
+
+                const startTime = performance.now();
+                let latency = null;
+
+                try {
+                    latency = await pingLocalIP(url, startTime, 3000);
+                } catch (error) {
+                    latency = null;
+                }
+
+                const endTime = performance.now();
+                const actualLatency = latency !== null ? latency : Math.round(endTime - startTime);
+
+                if (latency !== null) {
+                    progressItem.classList.remove('pending');
+                    progressItem.classList.add('success');
+                    const msText = getText('ping.success', `${actualLatency} мс`).replace(/\{latency\}/g, actualLatency);
+                    progressItem.querySelector('.ping-status-text').textContent = msText;
+                    results.push(actualLatency);
+                } else {
+                    progressItem.classList.remove('pending');
+                    progressItem.classList.add('error');
+                    progressItem.querySelector('.ping-status-text').textContent = getText('ping.error', 'Недоступен');
+                }
+
+                if (i < packets - 1) {
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+            }
+
+            if (results.length > 0) {
+                const sorted = [...results].sort((a, b) => a - b);
+                const min = sorted[0];
+                const max = sorted[sorted.length - 1];
+                const avg = Math.round(results.reduce((a, b) => a + b, 0) / results.length);
+                const median = sorted.length % 2 === 0
+                    ? Math.round((sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2)
+                    : sorted[Math.floor(sorted.length / 2)];
+                
+                let jitter = 0;
+                if (results.length > 1) {
+                    const differences = [];
+                    for (let i = 1; i < results.length; i++) {
+                        differences.push(Math.abs(results[i] - results[i - 1]));
+                    }
+                    jitter = Math.round(differences.reduce((a, b) => a + b, 0) / differences.length);
+                }
+                
+                const loss = Math.round(((packets - results.length) / packets) * 100);
+
+                const msUnit = getText('ping.ms', 'мс');
+                document.getElementById('ping-min').textContent = `${min} ${msUnit}`;
+                document.getElementById('ping-max').textContent = `${max} ${msUnit}`;
+                document.getElementById('ping-avg').textContent = `${avg} ${msUnit}`;
+                document.getElementById('ping-median').textContent = `${median} ${msUnit}`;
+                document.getElementById('ping-jitter').textContent = `${jitter} ${msUnit}`;
+                document.getElementById('ping-loss').textContent = `${loss}%`;
+
+                statsDiv.hidden = false;
+            } else {
+                statsDiv.hidden = true;
+            }
+
+            startBtn.disabled = false;
+        });
+    }
+
+    function parseIPRange(range) {
+        const ips = [];
+        const parts = range.split(',');
+        
+        for (const part of parts) {
+            const trimmed = part.trim();
+            if (trimmed.includes('-')) {
+                const [start, end] = trimmed.split('-').map(s => s.trim());
+                const startParts = start.split('.');
+                const base = startParts.slice(0, 3).join('.');
+                const startNum = parseInt(startParts[3]);
+                const endNum = parseInt(end);
+                
+                for (let i = startNum; i <= endNum; i++) {
+                    ips.push(`${base}.${i}`);
+                }
+            } else {
+                ips.push(trimmed);
+            }
+        }
+        
+        return ips;
+    }
+
+    async function scanDevice(ip, timeout, abortSignal = null) {
+        const url = `http://${ip}/?t=${Date.now()}`;
+        
+        return new Promise((resolve) => {
+            if (abortSignal && abortSignal.aborted) {
+                resolve({ ip, success: false });
+                return;
+            }
+
+            const img = new Image();
+            let resolved = false;
+            let timeoutId = null;
+            
+            const cleanup = () => {
+                if (resolved) return;
+                resolved = true;
+                img.onload = null;
+                img.onerror = null;
+                if (timeoutId) {
+                    clearTimeout(timeoutId);
+                    timeoutId = null;
+                }
+                if (abortSignal) {
+                    abortSignal.removeEventListener('abort', abortHandler);
+                }
+            };
+
+            const abortHandler = () => {
+                cleanup();
+                resolve({ ip, success: false });
+            };
+
+            if (abortSignal) {
+                abortSignal.addEventListener('abort', abortHandler);
+            }
+            
+            timeoutId = setTimeout(() => {
+                cleanup();
+                resolve({ ip, success: false });
+            }, timeout);
+            
+            img.onload = () => {
+                cleanup();
+                resolve({ ip, success: true });
+            };
+            
+            img.onerror = () => {
+                cleanup();
+                resolve({ ip, success: true });
+            };
+            
+            img.src = url;
+        });
+    }
+
+    function initScanner() {
+        const scannerForm = document.getElementById('scanner-form');
+        if (!scannerForm) return;
+
+        let isScanningCancelled = false;
+        let currentScanAbortController = null;
+
+        const stopBtn = document.getElementById('scanner-stop');
+        if (stopBtn) {
+            stopBtn.addEventListener('click', () => {
+                isScanningCancelled = true;
+                if (currentScanAbortController) {
+                    currentScanAbortController.abort();
+                }
+            });
+        }
+
+        scannerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const rangeInput = document.getElementById('scanner-range');
+            const timeoutInput = document.getElementById('scanner-timeout');
+            const startBtn = document.getElementById('scanner-start');
+            const resultsDiv = document.getElementById('scanner-results');
+            const progressDiv = document.getElementById('scanner-progress');
+            const devicesDiv = document.getElementById('scanner-devices');
+            const progressText = document.getElementById('scanner-progress-text');
+
+            if (!rangeInput || !timeoutInput || !startBtn || !resultsDiv || !progressDiv || !devicesDiv) return;
+
+            const range = rangeInput.value.trim();
+            const timeout = Math.max(200, Math.min(2000, parseInt(timeoutInput.value) || 200));
+
+            if (!range) {
+                showToast(getText('tools.scanner_range', 'Укажите диапазон IP адресов'), 'error');
+                return;
+            }
+
+            let ips;
+            try {
+                ips = parseIPRange(range);
+                if (ips.length === 0 || ips.length > 254) {
+                    showToast(getText('tools.scanner_range', 'Диапазон должен содержать от 1 до 254 адресов'), 'error');
+                    return;
+                }
+            } catch (error) {
+                showToast(getText('tools.scanner_range', 'Неверный формат диапазона'), 'error');
+                return;
+            }
+
+            isScanningCancelled = false;
+            currentScanAbortController = new AbortController();
+            
+            startBtn.disabled = true;
+            startBtn.hidden = true;
+            if (stopBtn) {
+                stopBtn.hidden = false;
+            }
+            resultsDiv.hidden = false;
+            progressDiv.innerHTML = '';
+            devicesDiv.innerHTML = '';
+            progressText.textContent = '';
+
+            const foundDevices = [];
+            const total = ips.length;
+            let scanned = 0;
+
+            for (let i = 0; i < ips.length; i++) {
+                if (isScanningCancelled || currentScanAbortController.signal.aborted) {
+                    progressText.textContent = `${getText('tools.scanner_stopped', 'Сканирование остановлено')} - ${scanned}/${total} (${foundDevices.length} ${getText('tools.scanner_found', 'найдено')})`;
+                    break;
+                }
+
+                const ip = ips[i];
+                const progressItem = document.createElement('div');
+                progressItem.className = 'scanner-progress-item';
+                progressItem.innerHTML = `<span class="scanner-ip">${ip}</span> <span class="scanner-status">${getText('tools.scanner_scanning', 'Проверка...')}</span>`;
+                progressDiv.appendChild(progressItem);
+
+                const result = await scanDevice(ip, timeout, currentScanAbortController.signal);
+                scanned++;
+
+                if (isScanningCancelled || currentScanAbortController.signal.aborted) {
+                    progressText.textContent = `${getText('tools.scanner_stopped', 'Сканирование остановлено')} - ${scanned}/${total} (${foundDevices.length} ${getText('tools.scanner_found', 'найдено')})`;
+                    break;
+                }
+
+                if (result.success) {
+                    progressItem.classList.add('success');
+                    progressItem.querySelector('.scanner-status').textContent = getText('tools.scanner_found_device', 'Найдено');
+                    foundDevices.push(result);
+                } else {
+                    progressItem.classList.add('error');
+                    progressItem.querySelector('.scanner-status').textContent = getText('ping.error', 'Недоступен');
+                }
+
+                progressText.textContent = `${scanned}/${total} (${foundDevices.length} ${getText('tools.scanner_found', 'найдено')})`;
+
+                if (i < ips.length - 1 && !isScanningCancelled && !currentScanAbortController.signal.aborted) {
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                }
+            }
+
+            if (foundDevices.length > 0) {
+                const devicesTitle = document.createElement('h4');
+                devicesTitle.textContent = `${getText('tools.scanner_found', 'Найдено устройств')}: ${foundDevices.length}`;
+                devicesDiv.appendChild(devicesTitle);
+
+                const devicesList = document.createElement('div');
+                devicesList.className = 'scanner-devices-list';
+                
+                foundDevices.forEach(device => {
+                    const deviceItem = document.createElement('div');
+                    deviceItem.className = 'scanner-device-item';
+                    deviceItem.innerHTML = `
+                        <div class="scanner-device-ip">${device.ip}</div>
+                    `;
+                    deviceItem.addEventListener('click', () => {
+                        document.getElementById('ping-target').value = device.ip;
+                        const pingTab = document.querySelector('.tools-tab[data-tab="ping"]');
+                        if (pingTab) pingTab.click();
+                    });
+                    devicesList.appendChild(deviceItem);
+                });
+                
+                devicesDiv.appendChild(devicesList);
+            } else {
+                const empty = document.createElement('p');
+                empty.className = 'muted';
+                empty.textContent = getText('tools.scanner_no_devices', 'Устройства не найдены');
+                devicesDiv.appendChild(empty);
+            }
+
+            startBtn.disabled = false;
+            startBtn.hidden = false;
+            if (stopBtn) {
+                stopBtn.hidden = true;
+            }
+            currentScanAbortController = null;
+        });
     }
 
     function renderSelectedCreds(target, creds) {
@@ -1119,12 +1657,73 @@
         }
     }
 
+    function initTools() {
+        const toolsDialog = document.getElementById('tools-dialog');
+        const toolsToggle = document.getElementById('tools-toggle');
+        const toolsClose = document.getElementById('tools-dialog-close');
+        const toolsTabs = document.querySelectorAll('.tools-tab');
+        const toolsContent = document.querySelectorAll('.tools-tab-content');
+
+        if (!toolsDialog || !toolsToggle) return;
+
+        const openTools = () => {
+            toolsDialog.hidden = false;
+            document.body.style.overflow = 'hidden';
+            window.__I18N__?.apply?.();
+        };
+
+        const closeTools = () => {
+            toolsDialog.hidden = true;
+            document.body.style.overflow = '';
+        };
+
+        toolsToggle.addEventListener('click', openTools);
+        toolsClose?.addEventListener('click', closeTools);
+
+        toolsDialog.addEventListener('click', (e) => {
+            if (e.target === toolsDialog || e.target.classList.contains('tools-dialog-overlay')) {
+                closeTools();
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !toolsDialog.hidden) {
+                closeTools();
+            }
+        });
+
+        toolsTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const targetTab = tab.dataset.tab;
+                
+                toolsTabs.forEach(t => {
+                    t.classList.remove('active');
+                    t.setAttribute('aria-selected', 'false');
+                });
+                tab.classList.add('active');
+                tab.setAttribute('aria-selected', 'true');
+
+                toolsContent.forEach(content => {
+                    content.classList.remove('active');
+                    if (content.dataset.content === targetTab) {
+                        content.classList.add('active');
+                    }
+                });
+            });
+        });
+
+        initMine();
+        initPingAdvanced();
+        initScanner();
+    }
+
     async function init() {
         initTheme();
         registerServiceWorker();
         const db = await loadRouterDb();
         initDefaults(db);
-        initMine();
+        initPing();
+        initTools();
     }
 
     if (document.readyState === 'loading') {
