@@ -1,6 +1,6 @@
 // Service Worker для оффлайн работы.
 
-const CACHE_VERSION = 'v4';
+const CACHE_VERSION = 'v5';
 const CACHE_NAME = `router-cache-${CACHE_VERSION}`;
 
 // Список ресурсов для кэширования при установке
@@ -67,7 +67,16 @@ self.addEventListener('activate', (event) => {
     );
 });
 
-// Обработка запросов с стратегией Stale While Revalidate
+// Критические ресурсы - Cache First стратегия
+const CRITICAL_RESOURCES = [
+    './',
+    './index.html',
+    './styles.css',
+    './app.js',
+    './i18n/i18n.js'
+];
+
+// Обработка запросов с улучшенной стратегией кэширования
 self.addEventListener('fetch', (event) => {
     const { request } = event;
     const url = new URL(request.url);
@@ -82,13 +91,33 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
+    const requestPath = url.pathname;
+    const isCritical = CRITICAL_RESOURCES.some(resource => 
+        requestPath === resource || requestPath === resource.replace('./', '/')
+    );
+
     event.respondWith(
         caches.open(CACHE_NAME)
             .then((cache) => {
                 return cache.match(request)
                     .then((cachedResponse) => {
-                        // Пытаемся получить свежую версию из сети
-                        const fetchPromise = fetch(request)
+                        // Для критических ресурсов - Cache First
+                        if (isCritical && cachedResponse) {
+                            // Обновляем кэш в фоне, если есть сеть
+                            fetch(request)
+                                .then((networkResponse) => {
+                                    if (networkResponse.ok) {
+                                        cache.put(request, networkResponse.clone());
+                                    }
+                                })
+                                .catch(() => {
+                                    // Сеть недоступна, используем кэш
+                                });
+                            return cachedResponse;
+                        }
+
+                        // Для остальных - Network First с fallback на кэш
+                        return fetch(request)
                             .then((networkResponse) => {
                                 // Обновляем кэш свежим ответом
                                 if (networkResponse.ok) {
@@ -97,20 +126,21 @@ self.addEventListener('fetch', (event) => {
                                 return networkResponse;
                             })
                             .catch(() => {
-                                // Если сеть недоступна, возвращаем кэш или ошибку
+                                // Если сеть недоступна, возвращаем кэш
                                 if (cachedResponse) {
                                     return cachedResponse;
                                 }
-                                return new Response('Оффлайн', { status: 503, statusText: 'Service Unavailable' });
+                                // Для критических ресурсов возвращаем кэш даже если он старый
+                                if (isCritical) {
+                                    return cache.match(request, { ignoreSearch: true });
+                                }
+                                // Fallback для некритических ресурсов
+                                return new Response('Оффлайн', { 
+                                    status: 503, 
+                                    statusText: 'Service Unavailable',
+                                    headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+                                });
                             });
-
-                        // Возвращаем кэшированный ответ сразу, если он есть
-                        if (cachedResponse) {
-                            return cachedResponse;
-                        }
-
-                        // Если кэша нет, ждем ответа из сети
-                        return fetchPromise;
                     });
             })
     );

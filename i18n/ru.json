@@ -118,14 +118,19 @@
   "tools.connection_ip": "Внешний IP",
   "tools.connection_location": "Местоположение",
   "tools.export": "Экспорт/Импорт",
+  "tools.export_import_title": "Резервное копирование",
+  "tools.export_import_desc": "Сохраните или восстановите настройки ваших роутеров",
   "tools.export_title": "Экспорт настроек",
   "tools.export_desc": "Скачайте резервную копию всех сохранённых роутеров",
   "tools.export_btn": "Экспортировать",
+  "tools.export_hint": "Скачать файл с настройками",
   "tools.import_title": "Импорт настроек",
   "tools.import_desc": "Загрузите файл с настройками роутеров",
-  "tools.import_btn": "Выбрать файл",
+  "tools.import_btn": "Импортировать",
+  "tools.import_hint": "Загрузить файл с настройками",
   "tools.import_success": "Настройки успешно импортированы",
-  "tools.import_error": "Ошибка при импорте настроек"
+  "tools.import_error": "Ошибка при импорте настроек",
+  "offline.message": "Работа в офлайн режиме"
 }
 
 

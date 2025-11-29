@@ -1633,8 +1633,8 @@
         renderMine();
     }
 
-    // Регистрация Service Worker для оффлайн работы
-    function registerServiceWorker() {
+    // Регистрация Service Worker для оффлайн работы с retry
+    function registerServiceWorker(retries = 3) {
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('./sw.js')
                 .then((registration) => {
@@ -1650,11 +1650,96 @@
                             });
                         }
                     });
+
+                    // Ждем активации Service Worker
+                    if (registration.installing) {
+                        registration.installing.addEventListener('statechange', (e) => {
+                            if (e.target.state === 'activated') {
+                                console.log('Service Worker активирован');
+                            }
+                        });
+                    } else if (registration.waiting) {
+                        console.log('Service Worker ожидает активации');
+                    } else if (registration.active) {
+                        console.log('Service Worker активен');
+                    }
                 })
                 .catch((error) => {
                     console.warn('Ошибка регистрации Service Worker:', error);
+                    // Retry при ошибке
+                    if (retries > 0) {
+                        setTimeout(() => {
+                            registerServiceWorker(retries - 1);
+                        }, 2000);
+                    }
                 });
         }
+    }
+
+    // Обработка офлайн/онлайн событий
+    function initOfflineHandler() {
+        const connectionStatusIcon = document.getElementById('connection-status-icon');
+        let wasOffline = false;
+        
+        const updateOnlineStatus = () => {
+            // Используем navigator.onLine, но если он false, проверяем дополнительно
+            let isOnline = navigator.onLine;
+            
+            // Если navigator.onLine говорит что офлайн, но мы еще не были офлайн,
+            // это может быть ложное срабатывание - игнорируем
+            if (!isOnline && !wasOffline) {
+                // Проверяем через небольшой таймаут - возможно это временная проблема
+                setTimeout(() => {
+                    if (!navigator.onLine) {
+                        wasOffline = true;
+                        updateOnlineStatus();
+                    }
+                }, 1000);
+                return;
+            }
+            
+            if (!isOnline) {
+                wasOffline = true;
+            } else {
+                wasOffline = false;
+            }
+            
+            document.documentElement.setAttribute('data-online', isOnline ? 'true' : 'false');
+            
+            if (connectionStatusIcon) {
+                connectionStatusIcon.setAttribute('data-online', isOnline ? 'true' : 'false');
+                connectionStatusIcon.setAttribute('title', isOnline ? 'Онлайн' : 'Офлайн');
+                connectionStatusIcon.setAttribute('aria-label', isOnline ? 'Онлайн' : 'Офлайн');
+            }
+            
+            if (isOnline) {
+                // При восстановлении сети проверяем обновления
+                if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                    navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
+                }
+            }
+        };
+
+        // Слушаем события браузера
+        window.addEventListener('online', () => {
+            wasOffline = false;
+            updateOnlineStatus();
+        });
+        window.addEventListener('offline', () => {
+            wasOffline = true;
+            updateOnlineStatus();
+        });
+        
+        // Устанавливаем начальное состояние - по умолчанию считаем что онлайн
+        document.documentElement.setAttribute('data-online', 'true');
+        if (connectionStatusIcon) {
+            connectionStatusIcon.setAttribute('data-online', 'true');
+            connectionStatusIcon.setAttribute('title', 'Онлайн');
+            connectionStatusIcon.setAttribute('aria-label', 'Онлайн');
+        }
+        
+        // Проверяем статус после небольшой задержки
+        setTimeout(updateOnlineStatus, 100);
     }
 
     function initTraceroute() {
@@ -1811,67 +1896,59 @@
         return { network, broadcast, hosts, range };
     }
 
-    function initConnectionCheck() {
-        const checkBtn = document.getElementById('connection-check-btn');
-        if (!checkBtn) return;
+    async function checkConnection() {
+        const resultsDiv = document.getElementById('connection-results');
+        const infoDiv = document.getElementById('connection-info');
 
-        checkBtn.addEventListener('click', async () => {
-            const resultsDiv = document.getElementById('connection-results');
-            const infoDiv = document.getElementById('connection-info');
+        if (!resultsDiv || !infoDiv) return;
 
-            if (!resultsDiv || !infoDiv) return;
+        resultsDiv.hidden = false;
+        infoDiv.innerHTML = '<p class="muted">Проверка...</p>';
 
-            checkBtn.disabled = true;
-            resultsDiv.hidden = false;
-            infoDiv.innerHTML = '<p class="muted">Проверка...</p>';
+        try {
+            const online = navigator.onLine;
+            let externalIP = 'Не определён';
+            let location = 'Не определён';
 
-            try {
-                const online = navigator.onLine;
-                let externalIP = 'Не определён';
-                let location = 'Не определён';
+            if (online) {
+                try {
+                    const ipResponse = await fetch('https://api.ipify.org?format=json', { signal: AbortSignal.timeout(5000) });
+                    const ipData = await ipResponse.json();
+                    externalIP = ipData.ip || 'Не определён';
+                } catch (e) {}
 
-                if (online) {
-                    try {
-                        const ipResponse = await fetch('https://api.ipify.org?format=json', { signal: AbortSignal.timeout(5000) });
-                        const ipData = await ipResponse.json();
-                        externalIP = ipData.ip || 'Не определён';
-                    } catch (e) {}
-
-                    try {
-                        const locResponse = await fetch(`https://ipapi.co/${externalIP}/json/`, { signal: AbortSignal.timeout(5000) });
-                        const locData = await locResponse.json();
-                        if (locData.city && locData.country_name) {
-                            location = `${locData.city}, ${locData.country_name}`;
-                        }
-                    } catch (e) {}
-                }
-
-                const statusClass = online ? 'online' : 'offline';
-                const statusText = online ? getText('tools.connection_online', 'Онлайн') : getText('tools.connection_offline', 'Офлайн');
-
-                infoDiv.innerHTML = `
-                    <div class="connection-info-item">
-                        <span class="subnet-info-label">${getText('tools.connection_status', 'Статус')}</span>
-                        <span class="connection-status ${statusClass}">
-                            <span class="connection-status-dot"></span>
-                            ${statusText}
-                        </span>
-                    </div>
-                    <div class="connection-info-item">
-                        <span class="subnet-info-label">${getText('tools.connection_ip', 'Внешний IP')}</span>
-                        <span class="subnet-info-value">${externalIP}</span>
-                    </div>
-                    <div class="connection-info-item">
-                        <span class="subnet-info-label">${getText('tools.connection_location', 'Местоположение')}</span>
-                        <span class="subnet-info-value">${location}</span>
-                    </div>
-                `;
-            } catch (error) {
-                infoDiv.innerHTML = '<p class="muted">Ошибка при проверке подключения</p>';
+                try {
+                    const locResponse = await fetch(`https://ipapi.co/${externalIP}/json/`, { signal: AbortSignal.timeout(5000) });
+                    const locData = await locResponse.json();
+                    if (locData.city && locData.country_name) {
+                        location = `${locData.city}, ${locData.country_name}`;
+                    }
+                } catch (e) {}
             }
 
-            checkBtn.disabled = false;
-        });
+            const statusClass = online ? 'online' : 'offline';
+            const statusText = online ? getText('tools.connection_online', 'Онлайн') : getText('tools.connection_offline', 'Офлайн');
+
+            infoDiv.innerHTML = `
+                <div class="connection-info-item">
+                    <span class="subnet-info-label">${getText('tools.connection_status', 'Статус')}</span>
+                    <span class="connection-status ${statusClass}">
+                        <span class="connection-status-dot"></span>
+                        ${statusText}
+                    </span>
+                </div>
+                <div class="connection-info-item">
+                    <span class="subnet-info-label">${getText('tools.connection_ip', 'Внешний IP')}</span>
+                    <span class="subnet-info-value">${externalIP}</span>
+                </div>
+                <div class="connection-info-item">
+                    <span class="subnet-info-label">${getText('tools.connection_location', 'Местоположение')}</span>
+                    <span class="subnet-info-value">${location}</span>
+                </div>
+            `;
+        } catch (error) {
+            infoDiv.innerHTML = '<p class="muted">Ошибка при проверке подключения</p>';
+        }
     }
 
     function initExportImport() {
@@ -1957,6 +2034,12 @@
             toolsDialog.hidden = false;
             document.body.style.overflow = 'hidden';
             window.__I18N__?.apply?.();
+            initMine();
+            
+            const activeTab = document.querySelector('.tools-tab.active');
+            if (activeTab && activeTab.dataset.tab === 'speedtest') {
+                checkConnection();
+            }
         };
 
         const closeTools = () => {
@@ -1994,25 +2077,33 @@
                     content.classList.remove('active');
                     if (content.dataset.content === targetTab) {
                         content.classList.add('active');
+                        if (targetTab === 'speedtest') {
+                            checkConnection();
+                        }
                     }
                 });
+                window.__I18N__?.apply?.();
             });
         });
 
         initMine();
-        initPingAdvanced();
-        initScanner();
-        initTraceroute();
         initSubnetCalculator();
-        initConnectionCheck();
         initExportImport();
     }
 
     async function init() {
         initTheme();
+        initOfflineHandler();
         registerServiceWorker();
-        const db = await loadRouterDb();
-        initDefaults(db);
+        
+        try {
+            const db = await loadRouterDb();
+            initDefaults(db);
+        } catch (error) {
+            console.warn('Ошибка загрузки базы данных роутеров:', error);
+            initDefaults({ defaultsCommon: [], models: [] });
+        }
+        
         initPing();
         initTools();
     }

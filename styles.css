@@ -38,6 +38,33 @@ body {
 
 .visually-hidden { position: absolute !important; height: 1px; width: 1px; overflow: hidden; clip: rect(1px, 1px, 1px, 1px); white-space: nowrap; }
 
+.connection-status-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+  cursor: default;
+  flex-shrink: 0;
+}
+
+.connection-icon {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+  transition: color 0.3s ease;
+}
+
+.connection-status-icon[data-online="true"] .connection-icon {
+  color: #10b981;
+}
+
+.connection-status-icon[data-online="false"] .connection-icon {
+  color: #ef4444;
+}
+
 .app-header {
   max-width: 1120px;
   margin: 0 auto;
@@ -46,6 +73,7 @@ body {
   align-items: center;
   justify-content: space-between;
 }
+
 .brand { display: inline-flex; align-items: center; gap: 12px; }
 .logo { width: 32px; height: 32px; fill: var(--accent); filter: drop-shadow(0 0 8px rgba(77,163,255,0.4)); flex-shrink: 0; }
 .title { font-size: clamp(18px, 3.5vw, 20px); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -666,6 +694,57 @@ body {
   pointer-events: none;
 }
 
+/* Калькулятор подсетей */
+.subnet-form {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.subnet-form .btn {
+  width: 100%;
+  margin-top: 4px;
+}
+
+.subnet-results {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+
+.subnet-results h3 {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.subnet-info {
+  display: grid;
+  gap: 12px;
+}
+
+.subnet-info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: var(--card-strong);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.subnet-info-label {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.subnet-info-value {
+  font-family: monospace;
+  font-weight: 600;
+  color: var(--fg);
+  text-align: right;
+}
+
 .scanner-form {
   display: grid;
   gap: 16px;
@@ -1065,6 +1144,119 @@ body {
     flex-direction: column;
     align-items: flex-start;
   }
+  
+  .subnet-form {
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  
+  .subnet-results {
+    margin-top: 20px;
+    padding-top: 20px;
+  }
+  
+  .subnet-results h3 {
+    font-size: 16px;
+    margin-bottom: 12px;
+  }
+  
+  .subnet-info {
+    gap: 10px;
+  }
+  
+  .subnet-info-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 10px;
+  }
+  
+  .subnet-info-value {
+    text-align: left;
+    word-break: break-all;
+  }
+}
+
+/* Экспорт/Импорт в секции роутеров */
+.export-import-section {
+  margin-top: 32px;
+  padding-top: 24px;
+}
+
+.section-divider {
+  height: 1px;
+  background: var(--border);
+  margin-bottom: 24px;
+}
+
+.export-import-header {
+  margin-bottom: 20px;
+}
+
+.export-import-header h3 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.export-import-header p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.export-import-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.export-action,
+.import-action {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.export-action .btn,
+.import-action .btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.export-icon,
+.import-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.action-hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.import-status {
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.import-status.success {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.import-status.error {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
 /* Улучшенные области тапа для мобильных */
@@ -1090,5 +1282,20 @@ button, a, input, select { min-height: 44px; }
   .cred-field-row .field { min-width: 100px; }
   .form-actions { flex-wrap: nowrap; }
   .form-actions .btn { flex: 1 1 0; min-width: 0; }
+  
+  .export-import-actions {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .export-action,
+  .import-action {
+    width: 100%;
+  }
+  
+  .export-action .btn,
+  .import-action .btn {
+    width: 100%;
+  }
 }
 

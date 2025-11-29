@@ -37,6 +37,15 @@
         </div>
 
         <div class="header-actions">
+            <div class="connection-status-icon" id="connection-status-icon" aria-label="Статус подключения" title="Онлайн" data-online="true">
+                <svg class="connection-icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M1.25 10C1.25 14.8325 5.16751 18.75 10 18.75C14.8325 18.75 18.75 14.8325 18.75 10C18.75 5.16751 14.8325 1.25 10 1.25C5.16751 1.25 1.25 5.16751 1.25 10ZM17.25 10C17.25 14.0041 14.0041 17.25 10 17.25C5.99594 17.25 2.75 14.0041 2.75 10C2.75 5.99594 5.99594 2.75 10 2.75C14.0041 2.75 17.25 5.99594 17.25 10Z" fill="currentColor"/>
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M6.25 10C6.25 14.5222 7.74111 18.25 10 18.25C12.2589 18.25 13.75 14.5222 13.75 10C13.75 5.47778 12.2589 1.75 10 1.75C7.74111 1.75 6.25 5.47778 6.25 10ZM12.25 10C12.25 13.7621 11.0548 16.75 10 16.75C8.94518 16.75 7.75 13.7621 7.75 10C7.75 6.23795 8.94518 3.25 10 3.25C11.0548 3.25 12.25 6.23795 12.25 10Z" fill="currentColor"/>
+                    <path d="M3.60174 5.46733L4.60789 4.35483C4.70859 4.4459 4.817 4.53499 4.9328 4.62175C6.2041 5.57424 8.2323 6.16108 10.4482 6.16108C12.3391 6.16108 14.1005 5.73495 15.3792 5.00363C15.687 4.82759 15.9613 4.63663 16.1979 4.43451L17.1722 5.57496C16.8622 5.83981 16.511 6.08431 16.1239 6.3057C14.6076 7.17293 12.5898 7.66108 10.4482 7.66108C7.92613 7.66108 5.58282 6.98307 4.03339 5.82219C3.88117 5.70814 3.73712 5.58977 3.60174 5.46733Z" fill="currentColor"/>
+                    <path d="M3.60174 14.5486L4.60789 15.6611C4.70859 15.57 4.817 15.4809 4.9328 15.3941C6.2041 14.4417 8.2323 13.8548 10.4482 13.8548C12.3391 13.8548 14.1005 14.2809 15.3792 15.0123C15.687 15.1883 15.9613 15.3793 16.1979 15.5814L17.1722 14.4409C16.8622 14.1761 16.511 13.9316 16.1239 13.7102C14.6076 12.843 12.5898 12.3548 10.4482 12.3548C7.92613 12.3548 5.58282 13.0328 4.03339 14.1937C3.88117 14.3078 3.73712 14.4261 3.60174 14.5486Z" fill="currentColor"/>
+                    <path d="M1.75 10.75V9.25H18.25V10.75H1.75Z" fill="currentColor"/>
+                </svg>
+            </div>
             <button id="tools-toggle" class="icon-btn tools-btn" type="button" aria-label="Инструменты" data-i18n-title="tools.title">
                 <svg class="tools-icon" viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.64-.07.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="currentColor"/>
@@ -183,13 +192,8 @@
             </header>
             <div class="tools-tabs" role="tablist">
                 <button type="button" class="tools-tab active" data-tab="routers" role="tab" aria-selected="true" data-i18n="tools.routers">Мои роутеры</button>
-                <button type="button" class="tools-tab" data-tab="ping" role="tab" aria-selected="false" data-i18n="tools.ping">Пинг</button>
                 <button type="button" class="tools-tab" data-tab="speedtest" role="tab" aria-selected="false" data-i18n="tools.speedtest">Проверка скорости</button>
-                <button type="button" class="tools-tab" data-tab="scanner" role="tab" aria-selected="false" data-i18n="tools.scanner">Сканер сети</button>
-                <button type="button" class="tools-tab" data-tab="traceroute" role="tab" aria-selected="false" data-i18n="tools.traceroute">Traceroute</button>
                 <button type="button" class="tools-tab" data-tab="subnet" role="tab" aria-selected="false" data-i18n="tools.subnet">Калькулятор подсетей</button>
-                <button type="button" class="tools-tab" data-tab="connection" role="tab" aria-selected="false" data-i18n="tools.connection">Проверка подключения</button>
-                <button type="button" class="tools-tab" data-tab="export" role="tab" aria-selected="false" data-i18n="tools.export">Экспорт/Импорт</button>
             </div>
             <div class="tools-content">
                 <!-- Секция роутеров -->
@@ -258,83 +262,45 @@
                         </div>
                     </form>
                     <div id="mine-list" class="list"></div>
-                </div>
-                <!-- Секция пинга -->
-                <div class="tools-tab-content" data-content="ping" role="tabpanel">
-                    <form id="ping-form" class="ping-form">
-                        <div class="field">
-                            <label for="ping-target" data-i18n="tools.ping_target">IP адрес или домен</label>
-                            <input id="ping-target" type="text" autocomplete="off" value="google.com" aria-required="true">
+                    <div class="export-import-section">
+                        <div class="section-divider"></div>
+                        <div class="export-import-header">
+                            <h3 data-i18n="tools.export_import_title">Резервное копирование</h3>
+                            <p class="muted" data-i18n="tools.export_import_desc">Сохраните или восстановите настройки ваших роутеров</p>
                         </div>
-                        <div class="field">
-                            <label for="ping-packets" data-i18n="tools.ping_packets">Количество пакетов</label>
-                            <input id="ping-packets" type="number" min="1" max="100" value="1" aria-required="true">
-                        </div>
-                        <button type="submit" class="btn primary" id="ping-start" data-i18n="tools.ping_start">Начать пинг</button>
-                    </form>
-                    <div id="ping-results" class="ping-results" hidden>
-                        <h3 data-i18n="tools.ping_results">Результаты</h3>
-                        <div id="ping-progress" class="ping-progress"></div>
-                        <div id="ping-stats" class="ping-stats" hidden>
-                            <h4 data-i18n="tools.ping_stats">Статистика</h4>
-                            <div class="ping-stats-grid">
-                                <div>
-                                    <span data-i18n="tools.ping_min">Мин</span>
-                                    <strong id="ping-min">—</strong>
-                                </div>
-                                <div>
-                                    <span data-i18n="tools.ping_max">Макс</span>
-                                    <strong id="ping-max">—</strong>
-                                </div>
-                                <div>
-                                    <span data-i18n="tools.ping_avg">Среднее</span>
-                                    <strong id="ping-avg">—</strong>
-                                </div>
-                                <div>
-                                    <span data-i18n="tools.ping_median">Медиана</span>
-                                    <strong id="ping-median">—</strong>
-                                </div>
-                                <div>
-                                    <span data-i18n="tools.ping_jitter">Джиттер</span>
-                                    <strong id="ping-jitter">—</strong>
-                                </div>
-                                <div>
-                                    <span data-i18n="tools.ping_loss">Потери</span>
-                                    <strong id="ping-loss">—</strong>
-                                </div>
+                        <div class="export-import-actions">
+                            <div class="export-action">
+                                <button type="button" class="btn primary" id="export-btn" data-i18n="tools.export_btn">
+                                    <svg class="export-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="M19 12v7H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2zm-6 .67l2.59-2.58L17 11.5l-5 5-5-5 1.41-1.41L11 12.67V3h2z" fill="currentColor"/>
+                                    </svg>
+                                    <span data-i18n="tools.export_btn">Экспортировать</span>
+                                </button>
+                                <p class="action-hint" data-i18n="tools.export_hint">Скачать файл с настройками</p>
+                            </div>
+                            <div class="import-action">
+                                <input type="file" id="import-file" accept=".json" hidden>
+                                <button type="button" class="btn" id="import-btn" data-i18n="tools.import_btn">
+                                    <svg class="import-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" fill="currentColor"/>
+                                    </svg>
+                                    <span data-i18n="tools.import_btn">Импортировать</span>
+                                </button>
+                                <p class="action-hint" data-i18n="tools.import_hint">Загрузить файл с настройками</p>
                             </div>
                         </div>
+                        <div id="import-status" class="import-status" hidden></div>
                     </div>
                 </div>
-                <!-- Секция сканера сети -->
-                <div class="tools-tab-content" data-content="scanner" role="tabpanel">
-                    <form id="scanner-form" class="scanner-form">
-                        <div class="field">
-                            <label for="scanner-range" data-i18n="tools.scanner_range">Диапазон IP адресов</label>
-                            <input id="scanner-range" type="text" autocomplete="off" placeholder="192.168.1.1-254" value="192.168.1.1-254" aria-required="true">
-                            <small class="field-hint" data-i18n="tools.scanner_range_hint">Формат: XXX.XXX.XXX.1-254 или XXX.XXX.XXX.1,XXX.XXX.XXX.2</small>
-                        </div>
-                        <div class="field">
-                            <label for="scanner-timeout" data-i18n="tools.scanner_timeout">Таймаут (мс)</label>
-                            <input id="scanner-timeout" type="number" min="200" max="2000" value="200" aria-required="true">
-                        </div>
-                        <div class="form-actions">
-                            <button type="submit" class="btn primary" id="scanner-start" data-i18n="tools.scanner_start">Начать сканирование</button>
-                            <button type="button" class="btn secondary" id="scanner-stop" data-i18n="tools.scanner_stop" hidden>Остановить</button>
-                        </div>
-                    </form>
-                    <div id="scanner-results" class="scanner-results" hidden>
-                        <div class="scanner-progress-header">
-                            <h3 data-i18n="tools.scanner_results">Результаты сканирования</h3>
-                            <div id="scanner-progress-text" class="scanner-progress-text"></div>
-                        </div>
-                        <div id="scanner-progress" class="scanner-progress"></div>
-                        <div id="scanner-devices" class="scanner-devices"></div>
-                    </div>
-                </div>
-                <!-- Секция интернетометра -->
+                <!-- Секция интернетометра и проверки подключения -->
                 <div class="tools-tab-content" data-content="speedtest" role="tabpanel">
                     <div class="speedtest-section">
+                        <div id="connection-results" class="connection-results">
+                            <h3 data-i18n="tools.connection_status">Статус подключения</h3>
+                            <div id="connection-info" class="connection-info">
+                                <p class="muted">Проверка...</p>
+                            </div>
+                        </div>
                         <p class="muted" data-i18n="tools.speedtest_desc">Проверьте скорость вашего интернет-соединения с помощью Яндекс Интернетометра.</p>
                         <div class="speedtest-logo-container">
                             <a href="https://yandex.by/internet" class="speedtest-logo-link speedtest-button" target="_blank" rel="noopener" aria-label="Яндекс Интернетометр">
@@ -343,46 +309,6 @@
                                 <img src="./assets/svg/YandexInt/Yanintlogo3.svg" class="speedtest-logo-image" alt="Яндекс" draggable="false">
                             </a>
                         </div>
-                    </div>
-                </div>
-                <!-- Секция сканера сети -->
-                <div class="tools-tab-content" data-content="scanner" role="tabpanel">
-                    <form id="scanner-form" class="scanner-form">
-                        <div class="field">
-                            <label for="scanner-range" data-i18n="tools.scanner_range">Диапазон IP адресов</label>
-                            <input id="scanner-range" type="text" autocomplete="off" placeholder="192.168.1.1-254" value="192.168.1.1-254" aria-required="true">
-                            <small class="field-hint" data-i18n="tools.scanner_range_hint">Формат: XXX.XXX.XXX.1-254 или XXX.XXX.XXX.1,XXX.XXX.XXX.2</small>
-                        </div>
-                        <div class="field">
-                            <label for="scanner-timeout" data-i18n="tools.scanner_timeout">Таймаут (мс)</label>
-                            <input id="scanner-timeout" type="number" min="200" max="2000" value="200" aria-required="true">
-                        </div>
-                        <div class="form-actions">
-                            <button type="submit" class="btn primary" id="scanner-start" data-i18n="tools.scanner_start">Начать сканирование</button>
-                            <button type="button" class="btn secondary" id="scanner-stop" data-i18n="tools.scanner_stop" hidden>Остановить</button>
-                        </div>
-                    </form>
-                    <div id="scanner-results" class="scanner-results" hidden>
-                        <div class="scanner-progress-header">
-                            <h3 data-i18n="tools.scanner_results">Результаты сканирования</h3>
-                            <div id="scanner-progress-text" class="scanner-progress-text"></div>
-                        </div>
-                        <div id="scanner-progress" class="scanner-progress"></div>
-                        <div id="scanner-devices" class="scanner-devices"></div>
-                    </div>
-                </div>
-                <!-- Секция Traceroute -->
-                <div class="tools-tab-content" data-content="traceroute" role="tabpanel">
-                    <form id="traceroute-form" class="traceroute-form">
-                        <div class="field">
-                            <label for="traceroute-target" data-i18n="tools.traceroute_target">IP адрес или домен</label>
-                            <input id="traceroute-target" type="text" autocomplete="off" value="google.com" aria-required="true">
-                        </div>
-                        <button type="submit" class="btn primary" id="traceroute-start" data-i18n="tools.traceroute_start">Начать трассировку</button>
-                    </form>
-                    <div id="traceroute-results" class="traceroute-results" hidden>
-                        <h3 data-i18n="tools.traceroute_results">Результаты трассировки</h3>
-                        <div id="traceroute-path" class="traceroute-path"></div>
                     </div>
                 </div>
                 <!-- Секция Калькулятор подсетей -->
@@ -401,33 +327,6 @@
                     <div id="subnet-results" class="subnet-results" hidden>
                         <h3 data-i18n="tools.subnet_results">Результаты расчёта</h3>
                         <div id="subnet-info" class="subnet-info"></div>
-                    </div>
-                </div>
-                <!-- Секция Проверка подключения -->
-                <div class="tools-tab-content" data-content="connection" role="tabpanel">
-                    <div class="connection-check">
-                        <button type="button" class="btn primary" id="connection-check-btn" data-i18n="tools.connection_check">Проверить подключение</button>
-                        <div id="connection-results" class="connection-results" hidden>
-                            <h3 data-i18n="tools.connection_status">Статус подключения</h3>
-                            <div id="connection-info" class="connection-info"></div>
-                        </div>
-                    </div>
-                </div>
-                <!-- Секция Экспорт/Импорт -->
-                <div class="tools-tab-content" data-content="export" role="tabpanel">
-                    <div class="export-import-section">
-                        <div class="export-section">
-                            <h3 data-i18n="tools.export_title">Экспорт настроек</h3>
-                            <p class="muted" data-i18n="tools.export_desc">Скачайте резервную копию всех сохранённых роутеров</p>
-                            <button type="button" class="btn primary" id="export-btn" data-i18n="tools.export_btn">Экспортировать</button>
-                        </div>
-                        <div class="import-section">
-                            <h3 data-i18n="tools.import_title">Импорт настроек</h3>
-                            <p class="muted" data-i18n="tools.import_desc">Загрузите файл с настройками роутеров</p>
-                            <input type="file" id="import-file" accept=".json" hidden>
-                            <button type="button" class="btn primary" id="import-btn" data-i18n="tools.import_btn">Выбрать файл</button>
-                            <div id="import-status" class="import-status" hidden></div>
-                        </div>
                     </div>
                 </div>
             </div>

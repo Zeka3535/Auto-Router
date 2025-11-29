@@ -118,14 +118,19 @@
   "tools.connection_ip": "External IP",
   "tools.connection_location": "Location",
   "tools.export": "Export/Import",
+  "tools.export_import_title": "Backup",
+  "tools.export_import_desc": "Save or restore your router settings",
   "tools.export_title": "Export settings",
   "tools.export_desc": "Download a backup of all saved routers",
   "tools.export_btn": "Export",
+  "tools.export_hint": "Download settings file",
   "tools.import_title": "Import settings",
   "tools.import_desc": "Upload a file with router settings",
-  "tools.import_btn": "Select file",
+  "tools.import_btn": "Import",
+  "tools.import_hint": "Upload settings file",
   "tools.import_success": "Settings imported successfully",
-  "tools.import_error": "Error importing settings"
+  "tools.import_error": "Error importing settings",
+  "offline.message": "Working offline"
 }
 
 
