@@ -130,6 +130,19 @@
   "tools.import_hint": "Upload settings file",
   "tools.import_success": "Settings imported successfully",
   "tools.import_error": "Error importing settings",
+  "tools.about": "About",
+  "tools.about_title": "About the Project",
+  "tools.about_desc": "Web application for quick access to router admin panel. Stores logins and passwords for various router and modem models, allows quick copying of credentials and opening router settings.",
+  "tools.about_instructions": "Instructions",
+  "tools.about_instr1_title": "Using default data:",
+  "tools.about_instr1_text": "Select a router from the list, click on the card to select, then use the copy button for login/password or the \"Open settings\" button to go to the admin panel.",
+  "tools.about_instr2_title": "Adding your router:",
+  "tools.about_instr2_text": "Open \"Tools\" → \"My routers\", fill in the form (brand, model, IP address, login/password pairs) and click \"Save\".",
+  "tools.about_instr3_title": "Availability check:",
+  "tools.about_instr3_text": "After selecting a router, use the \"Check\" button to check router availability via ping.",
+  "tools.about_instr4_title": "Backup:",
+  "tools.about_instr4_text": "In the \"My routers\" section, find the \"Backup\" section to export or import settings.",
+  "tools.about_github": "Open on GitHub",
   "offline.message": "Working offline"
 }
 

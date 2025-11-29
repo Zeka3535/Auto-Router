@@ -1175,6 +1175,153 @@ body {
     text-align: left;
     word-break: break-all;
   }
+  
+  .about-section {
+    gap: 20px;
+  }
+  
+  .about-header h3 {
+    font-size: 18px;
+  }
+  
+  .about-instructions h4 {
+    font-size: 16px;
+  }
+  
+  .instruction-item {
+    padding: 12px;
+  }
+  
+  .instruction-item strong {
+    font-size: 14px;
+  }
+  
+  .instruction-item p {
+    font-size: 13px;
+  }
+  
+  .github-button {
+    width: 100%;
+    padding: 12px 20px;
+    font-size: 15px;
+  }
+  
+  .github-icon {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+/* Секция О проекте */
+.about-section {
+  display: grid;
+  gap: 24px;
+}
+
+.about-header h3 {
+  margin: 0 0 12px 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.about-header p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.about-instructions h4 {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.instructions-content {
+  display: grid;
+  gap: 16px;
+}
+
+.instruction-item {
+  padding: 16px;
+  background: var(--card-strong);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.instruction-item strong {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.instruction-item p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.about-github {
+  margin-top: 8px;
+  display: flex;
+  justify-content: center;
+}
+
+.github-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 24px;
+  background: var(--card);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  color: var(--fg);
+  text-decoration: none;
+  font-size: 16px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.github-button:hover {
+  background: var(--card-strong);
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.github-button:active {
+  transform: translateY(0);
+}
+
+.github-icon {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+  flex-shrink: 0;
+}
+
+:root[data-theme="dark"] .github-button {
+  background: #1a1d2a;
+  border-color: #262a3a;
+}
+
+:root[data-theme="dark"] .github-button:hover {
+  background: #222530;
+  border-color: var(--accent);
+}
+
+:root[data-theme="light"] .github-button {
+  background: #ffffff;
+  border-color: #d9dfef;
+}
+
+:root[data-theme="light"] .github-button:hover {
+  background: #f9fbff;
+  border-color: var(--accent);
 }
 
 /* Экспорт/Импорт в секции роутеров */

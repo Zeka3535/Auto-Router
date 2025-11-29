@@ -1645,11 +1645,21 @@
                             newWorker.addEventListener('statechange', () => {
                                 if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                                     // Новый Service Worker установлен, можно обновить страницу
-                                    console.log('Доступна новая версия приложения');
+                                    if (navigator.onLine) {
+                                        // Принудительное обновление при наличии обновлений SW
+                                        window.location.reload();
+                                    }
                                 }
                             });
                         }
                     });
+                    
+                    // Периодическая проверка обновлений (каждые 60 секунд)
+                    setInterval(() => {
+                        if (navigator.onLine) {
+                            registration.update();
+                        }
+                    }, 60000);
 
                     // Ждем активации Service Worker
                     if (registration.installing) {
@@ -2091,7 +2101,41 @@
         initExportImport();
     }
 
+    // Принудительное обновление при первом открытии, если онлайн
+    function checkForUpdates() {
+        if (!navigator.onLine) return false;
+        
+        const FIRST_LOAD_KEY = 'router:firstLoad';
+        const RELOAD_FLAG = 'router:reloaded';
+        const isFirstLoad = !sessionStorage.getItem(FIRST_LOAD_KEY);
+        
+        if (isFirstLoad) {
+            // Проверяем, не обновлялись ли мы уже
+            if (sessionStorage.getItem(RELOAD_FLAG)) {
+                sessionStorage.setItem(FIRST_LOAD_KEY, 'true');
+                sessionStorage.removeItem(RELOAD_FLAG);
+                return false;
+            }
+            
+            // Помечаем, что мы обновляемся
+            sessionStorage.setItem(RELOAD_FLAG, 'true');
+            
+            // Принудительное обновление с обходом кэша через добавление параметра
+            const url = new URL(window.location.href);
+            url.searchParams.set('_refresh', Date.now().toString());
+            window.location.href = url.toString();
+            return true;
+        }
+        
+        return false;
+    }
+
     async function init() {
+        // Проверка обновлений при первом открытии
+        if (checkForUpdates()) {
+            return;
+        }
+        
         initTheme();
         initOfflineHandler();
         registerServiceWorker();
