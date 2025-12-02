@@ -2102,8 +2102,26 @@
     }
 
     // Принудительное обновление при первом открытии, если онлайн
-    function checkForUpdates() {
-        if (!navigator.onLine) return false;
+    async function checkForUpdates() {
+        // Проверяем доступность сети более надежным способом
+        if (!navigator.onLine) {
+            return false;
+        }
+        
+        // Дополнительная проверка через попытку fetch (с таймаутом)
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 2000);
+            await fetch('./', { 
+                method: 'HEAD', 
+                cache: 'no-store',
+                signal: controller.signal 
+            });
+            clearTimeout(timeoutId);
+        } catch (error) {
+            // Сеть недоступна, не делаем редирект
+            return false;
+        }
         
         const FIRST_LOAD_KEY = 'router:firstLoad';
         const RELOAD_FLAG = 'router:reloaded';
@@ -2117,14 +2135,21 @@
                 return false;
             }
             
-            // Помечаем, что мы обновляемся
-            sessionStorage.setItem(RELOAD_FLAG, 'true');
-            
-            // Принудительное обновление с обходом кэша через добавление параметра
-            const url = new URL(window.location.href);
-            url.searchParams.set('_refresh', Date.now().toString());
-            window.location.href = url.toString();
-            return true;
+            // Проверяем наличие service worker перед редиректом
+            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                // Помечаем, что мы обновляемся
+                sessionStorage.setItem(RELOAD_FLAG, 'true');
+                
+                // Принудительное обновление с обходом кэша через добавление параметра
+                const url = new URL(window.location.href);
+                url.searchParams.set('_refresh', Date.now().toString());
+                window.location.href = url.toString();
+                return true;
+            } else {
+                // Если service worker не установлен, просто помечаем первую загрузку
+                sessionStorage.setItem(FIRST_LOAD_KEY, 'true');
+                return false;
+            }
         }
         
         return false;
@@ -2132,7 +2157,8 @@
 
     async function init() {
         // Проверка обновлений при первом открытии
-        if (checkForUpdates()) {
+        const shouldReload = await checkForUpdates();
+        if (shouldReload) {
             return;
         }
         
